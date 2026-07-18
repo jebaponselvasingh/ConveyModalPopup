@@ -4,29 +4,29 @@
         xmlns="http://www.mendix.com/widget/1.0/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.mendix.com/widget/1.0/ ../node_modules/mendix/custom_widget.xsd">
     <name>Convey Modal Popup</name>
-    <description>Dockable side modal with Data view–like content, header drag repositioning, shared bottom dock, and configurable size, colors, and borders.</description>
+    <description>Dockable side modal with Data view–like content, header drag repositioning, shared bottom dock, side-by-side multi-open layout, and configurable size, colors, and borders.</description>
     <icon/>
     <properties>
         <propertyGroup caption="General">
             <property key="title" type="textTemplate" required="false">
                 <caption>Title</caption>
-                <description>Text shown in the maximized panel header and on the minimized dock tab. Supports expressions and attribute values (e.g. 'Address Change' or $Request/Name).</description>
+                <description>Text shown in the maximized panel header and on the minimized dock tab. Supports static text, expressions, and attribute values (for example 'Address Change' or $Request/Name). If empty at runtime, the widget falls back to the label 'Modal'. Use a clear, short title so dock tabs stay readable when several modals are minimized.</description>
             </property>
             <property key="trigger" type="widgets" required="false">
                 <caption>Trigger</caption>
-                <description>Drop zone for widgets that open the modal when clicked (for example an Action Button, Icon, or Image). Configure either Trigger, Is open, or both. Nested clickable widgets inside the trigger will also open the modal.</description>
+                <description>Drop zone for widgets that open the modal when clicked (for example an Action Button, Icon, or Image). Configure Trigger, Is open, or both. Nested clickable widgets inside the trigger also open the modal. If the trigger contains its own button or link, the wrapper does not add an extra keyboard role, so accessibility stays correct. Leave empty when opening is driven only by the Is open attribute from a microflow or nanoflow.</description>
             </property>
             <property key="datasource" type="datasource" isList="false" required="false">
                 <caption>Data source</caption>
-                <description>Optional single object that provides context to Content widgets, similar to a Data view. Configure Context, Microflow, Nanoflow, or Listen to widget. Leave empty if Content widgets use page context or their own nested Data views. Requires Mendix 11.11+.</description>
+                <description>Optional single object that provides context to Content widgets, similar to a Data view. Configure Context, Microflow, Nanoflow, or Listen to widget. Leave empty if Content widgets use page context or their own nested Data views. This is a single-object source (not a list). Requires Mendix 11.11+. While the data source is loading, Content stays mounted and a loading placeholder is shown so form values are not wiped by a brief refresh.</description>
             </property>
             <property key="content" type="widgets" required="false" dataSource="datasource">
                 <caption>Content</caption>
-                <description>Drop zone for the panel body. Place Text boxes, buttons, or any page widgets here. When Data source is set, nested widgets receive that object context (like inside a Data view) and can bind its attributes. Content stays mounted while minimized so form values are preserved until the modal is closed.</description>
+                <description>Drop zone for the panel body. Place Text boxes, buttons, or any page widgets here. When Data source is set, nested widgets receive that object context (like inside a Data view) and can bind its attributes. Content stays mounted while the modal is minimized so typed values are preserved until the modal is fully closed. In design mode, drop, paste, or move widgets into this zone the same way as a Container.</description>
             </property>
             <property key="isOpen" type="attribute" required="false">
                 <caption>Is open</caption>
-                <description>Optional Boolean attribute for two-way open/close control from microflows or nanoflows. Set true to open maximized; set false to close and remove the dock tab. The widget also writes to this attribute when the user opens or closes the modal. Place the widget in a context that provides this attribute (for example inside a Data view).</description>
+                <description>Optional Boolean attribute for two-way open/close control from microflows or nanoflows. Set true to open maximized; set false to close and remove the dock tab. The widget also writes to this attribute when the user opens or closes the modal (header Close, dock Close, Escape, or overlay click when enabled). Place the widget in a context that provides this attribute (for example inside a Data view). Prefer a stable helper object (page parameter or committed non-persistent entity) that is not recreated on every field change. After a short Data view remount, the widget restores open/minimized state and may re-assert true if the new object still has false.</description>
                 <attributeTypes>
                     <attributeType name="Boolean"/>
                 </attributeTypes>
@@ -35,7 +35,7 @@
         <propertyGroup caption="Layout">
             <property key="dockPosition" type="enumeration" defaultValue="right">
                 <caption>Dock position</caption>
-                <description>Side of the viewport where the maximized panel appears (home position before any drag). Right docks to the right edge; Left docks to the left edge.</description>
+                <description>Home side of the viewport where the maximized panel appears before any drag. Right docks to the right edge; Left docks to the left edge. When When multiple open is Open beside, only panels on the same side are tiled next to each other; left and right sides are arranged independently. Drag still moves the panel from this home position using a pixel offset.</description>
                 <enumerationValues>
                     <enumerationValue key="right">Right</enumerationValue>
                     <enumerationValue key="left">Left</enumerationValue>
@@ -43,27 +43,27 @@
             </property>
             <property key="width" type="string" required="true" defaultValue="480px">
                 <caption>Width</caption>
-                <description>CSS width of the maximized panel. Examples: 480px, 40%, 30vw. Required.</description>
+                <description>CSS width of the maximized panel. Examples: 480px, 40%, 30vw. Required. Used for layout and for side-by-side inset calculation (the widget measures the rendered pixel width after layout). Prefer consistent widths across multiple open modals when using Open beside so tiles line up cleanly.</description>
             </property>
             <property key="height" type="string" required="true" defaultValue="100%">
                 <caption>Height</caption>
-                <description>CSS height of the maximized panel. Examples: 100%, 90vh, 800px. Required. Use with Top offset when the panel should not cover the full viewport height.</description>
+                <description>CSS height of the maximized panel. Examples: 100%, 90vh, 800px. Required. Use with Top offset when the panel should not cover the full viewport height (for example under a top navigation bar). The panel body scrolls if Content exceeds this height.</description>
             </property>
             <property key="topOffset" type="string" required="false" defaultValue="0">
                 <caption>Top offset</caption>
-                <description>CSS top position of the maximized panel. Examples: 0, 64px, 10vh. Use this to clear a top navigation bar.</description>
+                <description>CSS top position of the maximized panel. Examples: 0, 64px, 10vh. Use this to clear a top navigation bar or app header so the panel does not cover chrome that must stay visible. Combined with Height to define the vertical band the panel occupies.</description>
             </property>
             <property key="zIndex" type="integer" defaultValue="1000">
                 <caption>Z-index</caption>
-                <description>Stacking order for the overlay and panel. The panel uses Z-index + 1. The shared dock bar uses a fixed z-index of 1100. Keep panel Z-index below 1100 if dock tabs must stay clickable above the panel.</description>
+                <description>Stacking order for the overlay and panel. The overlay uses this value; the panel uses Z-index + 1. The shared dock bar uses a fixed z-index of 1100. Keep the panel Z-index below 1100 if dock tabs must stay clickable above the panel. Raise it only when the panel must appear above other page overlays that use a similar range.</description>
             </property>
             <property key="enableDrag" type="boolean" defaultValue="true">
                 <caption>Enable drag</caption>
-                <description>When true, the user can drag the maximized panel by its header to any position on the screen. Form fields in Content remain usable (only the header is the drag handle). Minimize, maximize, and close still work normally. The dragged position is kept while minimized and resets when the modal is closed.</description>
+                <description>When true, the user can drag the maximized panel by its header to any position on the screen. Form fields in Content remain usable (only the header is the drag handle; Minimize and Close never start a drag). The dragged position is kept while minimized and when restoring, and resets to the docked home position when the modal is closed. The panel is clamped so about 40px of the header stays on-screen, including after window resize. Set false to keep the panel fixed to Dock position (plus side-by-side inset when applicable).</description>
             </property>
             <property key="multiOpenBehavior" type="enumeration" defaultValue="beside">
                 <caption>When multiple open</caption>
-                <description>How maximized panels are arranged when more than one Convey Modal Popup is open on the same dock side. Open beside places each new panel next to earlier ones (first at the edge, next beside it). Overlap stacks them on top of each other at the dock edge (previous behavior).</description>
+                <description>How maximized panels are arranged when more than one Convey Modal Popup is open on the same dock side. Open beside (default) places each new panel next to earlier ones: the first sits at the dock edge, the next is offset by the previous panel width plus an 8px gap, and so on. Closing or minimizing a panel reflows the remaining ones. If combined widths exceed the viewport, inset is capped so about 40px of the panel stays visible. Overlap stacks every maximized panel at the dock edge (previous stacking behavior). Left and right dock sides are independent. Drag offsets still apply on top of the home inset.</description>
                 <enumerationValues>
                     <enumerationValue key="beside">Open beside</enumerationValue>
                     <enumerationValue key="overlap">Overlap</enumerationValue>
@@ -73,43 +73,43 @@
         <propertyGroup caption="Appearance">
             <property key="iconClass" type="string" required="false">
                 <caption>Icon class</caption>
-                <description>Optional CSS class name for an icon shown before the title in the header and dock tab. Example from Atlas/Glyphicons: glyphicon glyphicon-file. Leave empty for no icon.</description>
+                <description>Optional CSS class name for an icon shown before the title in the maximized header and on the minimized dock tab. Example from Atlas/Glyphicons: glyphicon glyphicon-file. Leave empty for no icon. The icon uses Title color in the header and Tab text color on the dock tab.</description>
             </property>
             <property key="showOverlay" type="boolean" defaultValue="true">
                 <caption>Show overlay</caption>
-                <description>When true, a dimmed overlay covers the page behind the maximized panel. When false, the page remains fully visible and interactive under the panel.</description>
+                <description>When true, a dimmed overlay covers the page behind the maximized panel and keyboard focus is trapped inside the panel (true modal behavior). When false, the page remains fully visible and interactive under the panel, focus is not trapped, and Close on overlay click has no effect. Prefer false when users must keep editing the page while the panel is open.</description>
             </property>
             <property key="closeOnOverlayClick" type="boolean" defaultValue="false">
                 <caption>Close on overlay click</caption>
-                <description>When true and Show overlay is enabled, clicking the dimmed overlay closes the modal (same as the header Close button).</description>
+                <description>When true and Show overlay is enabled, clicking the dimmed overlay closes the modal the same way as the header Close button (fires On close and sets Is open to false when bound). Default is false so accidental clicks on the page dimmer do not dismiss the panel. Ignored when Show overlay is false.</description>
             </property>
             <property key="overlayColor" type="string" required="false" defaultValue="rgba(15, 23, 42, 0.12)">
                 <caption>Overlay color</caption>
-                <description>Background color of the page dimmer. Accepts any CSS color: #000000, rgb(0,0,0), or rgba(15, 23, 42, 0.12). Lower alpha = lighter overlay.</description>
+                <description>Background color of the page dimmer. Accepts any CSS color: #000000, rgb(0,0,0), or rgba(15, 23, 42, 0.12). Lower alpha = lighter overlay. Only visible when Show overlay is true.</description>
             </property>
             <property key="panelBackgroundColor" type="string" required="false" defaultValue="#ffffff">
                 <caption>Panel background</caption>
-                <description>Background color of the maximized panel shell. Accepts hex, rgb, or rgba. Example: #ffffff.</description>
+                <description>Background color of the maximized panel shell (outer container). Accepts hex, rgb, or rgba. Example: #ffffff. Usually kept the same as Header background and Body background for a flat look, or varied slightly for contrast.</description>
             </property>
             <property key="headerBackgroundColor" type="string" required="false" defaultValue="#ffffff">
                 <caption>Header background</caption>
-                <description>Background color of the panel header bar (title and controls). Example: #ffffff or #f8fafc.</description>
+                <description>Background color of the panel header bar (title, optional icon, Minimize, and Close). Example: #ffffff or #f8fafc. Pair with Title color and Control color for readable branding.</description>
             </property>
             <property key="bodyBackgroundColor" type="string" required="false" defaultValue="#ffffff">
                 <caption>Body background</caption>
-                <description>Background color of the scrollable content area below the header. Example: #ffffff or #f5f7f9.</description>
+                <description>Background color of the scrollable content area below the header. Example: #ffffff or #f5f7f9. Use a light tint if Content forms should sit on a subtle surface distinct from the header.</description>
             </property>
             <property key="titleColor" type="string" required="false" defaultValue="#1a2b4b">
                 <caption>Title color</caption>
-                <description>Text color for the panel title and optional header icon. Example: #1a2b4b.</description>
+                <description>Text color for the panel title and optional header icon. Example: #1a2b4b. Choose a color with strong contrast against Header background.</description>
             </property>
             <property key="controlColor" type="string" required="false" defaultValue="#1a2b4b">
                 <caption>Control color</caption>
-                <description>Color of the Minimize (−) and Close (×) icons in the panel header. Example: #1a2b4b.</description>
+                <description>Color of the Minimize (−) and Close (×) icons in the panel header. Example: #1a2b4b. Does not affect dock tab icons (those use Tab text color).</description>
             </property>
             <property key="headerBorderColor" type="string" required="false" defaultValue="#e8eaed">
                 <caption>Header border color</caption>
-                <description>Color of the 1px divider line under the header. Example: #e8eaed.</description>
+                <description>Color of the 1px divider line under the header that separates the title bar from the body. Example: #e8eaed.</description>
             </property>
             <property key="panelBorderColor" type="string" required="false" defaultValue="#e5e7eb">
                 <caption>Panel border color</caption>
@@ -117,23 +117,23 @@
             </property>
             <property key="panelBorderWidth" type="string" required="false" defaultValue="0">
                 <caption>Panel border width</caption>
-                <description>CSS border width for the maximized panel. Use 0 or 0px for no border; use 1px or 2px to show a border with Panel border color.</description>
+                <description>CSS border width for the maximized panel. Use 0 or 0px for no border; use 1px or 2px to show a border with Panel border color. Useful when the panel sits over a busy page and needs a clearer edge.</description>
             </property>
             <property key="panelBorderRadius" type="string" required="false" defaultValue="0">
                 <caption>Panel border radius</caption>
-                <description>CSS border-radius for the maximized panel corners. Use 0 for a flush side panel; use 8px or 12px for rounded corners.</description>
+                <description>CSS border-radius for the maximized panel corners. Use 0 for a flush side panel that meets the viewport edge; use 8px or 12px for rounded corners when the panel is floated or dragged away from the edge.</description>
             </property>
             <property key="panelBoxShadow" type="string" required="false" defaultValue="">
                 <caption>Panel box shadow</caption>
-                <description>Optional CSS box-shadow override. Leave empty to keep the default side shadow. Example: 0 8px 32px rgba(0,0,0,0.18).</description>
+                <description>Optional CSS box-shadow override for the maximized panel. Leave empty to keep the default side shadow (left or right depending on Dock position). Example: 0 8px 32px rgba(0,0,0,0.18). Use a stronger shadow when the panel is dragged over content and needs more elevation.</description>
             </property>
             <property key="tabColor" type="string" required="false" defaultValue="#cfe8ff">
                 <caption>Tab background</caption>
-                <description>Background (fill) color of the minimized dock tab pill. Use different pastel colors per modal instance to distinguish them. Examples: #cfe8ff, #ffe4c4, #d4edda, #f8d7da.</description>
+                <description>Background (fill) color of the minimized dock tab pill. Use different pastel colors per modal instance so users can tell tabs apart when several modals are minimized. Examples: #cfe8ff, #ffe4c4, #d4edda, #f8d7da.</description>
             </property>
             <property key="tabTextColor" type="string" required="false" defaultValue="#1a2b4b">
                 <caption>Tab text color</caption>
-                <description>Color of the dock tab title text and the Maximize / Close icons. Example: #1a2b4b.</description>
+                <description>Color of the dock tab title text, optional icon, and the Maximize / Close icons. Example: #1a2b4b. Choose a dark color against a light pastel Tab background for readability.</description>
             </property>
             <property key="tabBorderColor" type="string" required="false" defaultValue="rgba(26, 43, 75, 0.06)">
                 <caption>Tab border color</caption>
@@ -141,29 +141,29 @@
             </property>
             <property key="tabBorderWidth" type="string" required="false" defaultValue="1px">
                 <caption>Tab border width</caption>
-                <description>CSS border width for the dock tab. Use 0 or 0px for no border; use 1px (default) for a light outline.</description>
+                <description>CSS border width for the dock tab. Use 0 or 0px for no border; use 1px (default) for a light outline that separates pastel tabs from the page background.</description>
             </property>
             <property key="tabBorderRadius" type="string" required="false" defaultValue="8px">
                 <caption>Tab border radius</caption>
-                <description>CSS border-radius for the dock tab pill. Examples: 8px, 12px, 999px (fully rounded).</description>
+                <description>CSS border-radius for the dock tab pill. Examples: 8px, 12px, 999px (fully rounded pill). Higher values make tabs look more like soft chips in the shared bottom dock.</description>
             </property>
         </propertyGroup>
         <propertyGroup caption="Events">
             <property key="onOpen" type="action" required="false">
                 <caption>On open</caption>
-                <description>Action (microflow, nanoflow, or Call nanoflow) executed when the modal opens from a closed state (trigger click or Is open set to true). Not fired when restoring from minimized.</description>
+                <description>Action (microflow, nanoflow, or Call nanoflow) executed when the modal opens from a closed state (trigger click or Is open set to true). Not fired when restoring from minimized, and not fired again if the widget only re-asserts Is open after a short remount. Use this to load draft data or prepare the object shown in Content.</description>
             </property>
             <property key="onClose" type="action" required="false">
                 <caption>On close</caption>
-                <description>Action executed when the modal is fully closed (header Close, dock tab Close, Escape key, overlay click if enabled, or Is open set to false). Use this to clear draft data or refresh lists.</description>
+                <description>Action executed when the modal is fully closed: header Close, dock tab Close, Escape key (topmost maximized modal only), overlay click if enabled, or Is open set to false. Use this to clear draft data, commit, or refresh lists. Not fired on minimize.</description>
             </property>
             <property key="onMinimize" type="action" required="false">
                 <caption>On minimize</caption>
-                <description>Action executed when the user clicks Minimize in the panel header. The modal becomes a dock tab; content stays mounted.</description>
+                <description>Action executed when the user clicks Minimize in the panel header. The modal becomes a dock tab; Content stays mounted so form values are not lost. Is open remains true (the modal is still logically open). Use this for analytics or soft-save if needed.</description>
             </property>
             <property key="onMaximize" type="action" required="false">
                 <caption>On maximize</caption>
-                <description>Action executed when the user restores the modal from a dock tab (Maximize on the tab). Not fired on the initial open from closed.</description>
+                <description>Action executed when the user restores the modal from a dock tab (Maximize on the tab). Not fired on the initial open from closed. Use this to refresh Content or refocus a field after restore.</description>
             </property>
         </propertyGroup>
     </properties>

@@ -85,18 +85,31 @@ Output: `dist/1.0.0/indium.ConveyModalPopup.mpk`
 
 | Mode | Behavior |
 |------|----------|
-| **Open beside** (default) | Each maximized panel on the same dock side is offset by the width of panels opened before it (+ 8px gap). First sits at the edge; next opens beside it. Closing/minimizing one reflows the others. If combined widths exceed the viewport, inset is capped so ~40px stays visible. |
-| **Overlap** | All maximized panels share the dock edge (previous stacking behavior). |
+| **Open beside** (default) | Each maximized panel on the **same** dock side is offset by the width of panels opened before it, plus an **8px** gap. First sits at the edge; next opens beside it. Closing or minimizing one **reflows** the others toward the edge. If combined widths exceed the viewport, inset is capped so about **40px** of the panel stays visible (partial overlap only as a last resort). |
+| **Overlap** | All maximized panels share the dock edge (stacked on top of each other — previous behavior). Users can still drag panels apart if **Enable drag** is on. |
 
-Panels on **left** and **right** are arranged independently. Drag offsets still apply on top of the home inset.
+Panels docked **left** and **right** are arranged independently. User drag offsets still apply on top of the calculated home inset. Set this per widget instance under **Layout → When multiple open**.
 
 ---
 
 ## Is open and datasource refresh
 
-Bind **Is open** to a Boolean on a **stable** helper object (page parameter or a committed non-persistent entity that is not recreated on every field change). The widget restores open/minimized state across short remounts (e.g. Data view refresh) and re-asserts `Is open = true` when a fresh object still has `false`.
+Bind **Is open** to a Boolean on a **stable** helper object:
 
-If the surrounding Data view replaces its object, Mendix may remount Content widgets and reset unsaved field values — that is platform behavior, not the modal shell.
+- Page parameter, or  
+- A committed non-persistent entity that is **not** recreated on every field change / list refresh  
+
+Avoid binding Is open to an object that a surrounding Data view replaces whenever the user clicks a radio button or text box — that remounts the widget tree and historically closed every open modal.
+
+The widget mitigates short remounts by:
+
+1. Saving open/minimized state + drag offset by widget name (about 2 seconds TTL)  
+2. Restoring that state on remount  
+3. Re-asserting `Is open = true` when the new object still has `false`  
+
+Genuine closes (header/dock ×, Escape, microflow sets false while mounted) still work. **On open** does not fire again for a remount re-assert.
+
+If the surrounding Data view replaces its object, Mendix may still remount **Content** widgets and reset unsaved field values — that is platform behavior, not the modal shell. Keep form objects stable, or commit/refresh deliberately in **On close** / **On maximize**.
 
 ---
 
@@ -135,66 +148,66 @@ All of these appear in the widget properties pane in Studio Pro. Descriptions be
 
 | Property | Type | Required | Default | Explanation |
 |----------|------|----------|---------|-------------|
-| **Title** | Text template | No | — | Shown in the panel header and on the minimized dock tab. Supports expressions (e.g. `$Request/Name`). |
-| **Trigger** | Widgets | No | — | Clickable area that opens the modal. Use an Action Button, Icon, or Image. Configure Trigger, Is open, or both. |
-| **Data source** | Object datasource | No | — | Optional single object context for Content (like a Data view). Context / Microflow / Nanoflow / Listen to widget. Mendix 11.11+. |
-| **Content** | Widgets | No | — | Body of the maximized panel. Linked to Data source when set. Stays mounted while minimized. |
-| **Is open** | Boolean attribute | No | — | Two-way open/close from microflows/nanoflows. `true` = open maximized; `false` = close and remove dock tab. Widget writes to this attribute on user open/close. Requires entity context (e.g. Data view). |
+| **Title** | Text template | No | — | Shown in the maximized panel header and on the minimized dock tab. Supports static text, expressions, and attributes (e.g. `$Request/Name`). Empty → runtime fallback **Modal**. Keep titles short so dock tabs stay readable. |
+| **Trigger** | Widgets | No | — | Dropzone that opens the modal on click (Action Button, Icon, Image, etc.). Nested clickables also open it. If the dropzone already contains a button/link, the wrapper does not add an extra keyboard role. Leave empty when open/close is only via **Is open**. Configure Trigger, Is open, or both. |
+| **Data source** | Object datasource | No | — | Optional **single** object context for Content (like a Data view): Context / Microflow / Nanoflow / Listen to widget. Leave empty if Content uses page context or a nested Data view. Mendix **11.11+**. While loading, Content stays mounted with a loading placeholder so a brief refresh does not wipe form state. |
+| **Content** | Widgets | No | — | Panel body dropzone. When Data source is set, nested widgets bind that object’s attributes. Stays mounted while minimized until the modal is fully closed. Supports drop / paste / move in design mode like a Container. |
+| **Is open** | Boolean attribute | No | — | Two-way open/close for microflows/nanoflows. `true` = open maximized; `false` = close and remove dock tab. The widget also writes this attribute on user open/close (header/dock Close, Escape, overlay click if enabled). Requires entity context (e.g. Data view). Prefer a **stable** helper object (page parameter / committed NPE) not recreated on every field change. After a short remount, the widget restores open/minimized state and may re-assert `true` if the new object still has `false`. |
 
 ### Layout
 
 | Property | Type | Required | Default | Explanation |
 |----------|------|----------|---------|-------------|
-| **Dock position** | Enumeration | Yes | `Right` | Home side of the viewport: **Right** or **Left**. |
-| **Width** | String | Yes | `480px` | CSS width. Examples: `480px`, `40%`, `30vw`. |
-| **Height** | String | Yes | `100%` | CSS height. Examples: `100%`, `90vh`, `800px`. |
-| **Top offset** | String | No | `0` | CSS `top`. Use e.g. `64px` to clear a top nav bar. |
-| **Z-index** | Integer | No | `1000` | Overlay uses this value; panel uses Z-index + 1. Shared dock is fixed at **1100**. Keep panel Z-index below 1100 if dock tabs must stay above the panel. |
-| **Enable drag** | Boolean | No | `Yes` | Drag maximized panel by header. Position kept while minimized; resets on close. |
-| **When multiple open** | Enumeration | Yes | `Open beside` | **Open beside** places each new maximized panel next to earlier ones on the same dock side. **Overlap** stacks them at the dock edge. |
+| **Dock position** | Enumeration | Yes | `Right` | Home edge before drag: **Right** or **Left**. With **Open beside**, only panels on the **same** side are tiled; left and right are independent. Drag applies a pixel offset from this home position. |
+| **Width** | String | Yes | `480px` | CSS width (`480px`, `40%`, `30vw`). Also used for side-by-side inset (measured in pixels after layout). Prefer similar widths when several modals open beside each other. |
+| **Height** | String | Yes | `100%` | CSS height (`100%`, `90vh`, `800px`). Pair with Top offset under a top nav. Body scrolls when Content overflows. |
+| **Top offset** | String | No | `0` | CSS `top` (`0`, `64px`, `10vh`) to clear a top bar. Combined with Height defines the vertical band. |
+| **Z-index** | Integer | No | `1000` | Overlay uses this value; panel uses Z-index + 1. Shared dock is fixed at **1100**. Keep panel Z-index **below 1100** so dock tabs stay clickable. Raise only to sit above other overlays. |
+| **Enable drag** | Boolean | No | `Yes` | Drag by **header** only (body stays interactive; Minimize/Close never start a drag). Offset kept while minimized/restored; **resets on close**. Clamped so ~40px of the header stays on-screen (also after resize). Off = fixed to dock home (+ beside inset if applicable). |
+| **When multiple open** | Enumeration | Yes | `Open beside` | **Open beside** — first panel at the edge; each next one offset by previous width + 8px gap; close/minimize reflows others; inset capped so ~40px stays visible. **Overlap** — all maximized panels share the dock edge. Drag still applies on top of the home inset. |
 
 ### Appearance — overlay & panel colors
 
 | Property | Type | Default | Explanation |
 |----------|------|---------|-------------|
-| **Icon class** | String | — | CSS class for an icon before the title (header + dock). Example: `glyphicon glyphicon-file`. |
-| **Show overlay** | Boolean | `Yes` | Dim the page behind the maximized panel. |
-| **Close on overlay click** | Boolean | `No` | If overlay is shown, clicking it closes the modal. |
-| **Overlay color** | String | `rgba(15, 23, 42, 0.12)` | Dimmer color (`#hex`, `rgb()`, `rgba()`). Lower alpha = lighter. |
-| **Panel background** | String | `#ffffff` | Shell background of the maximized panel. |
-| **Header background** | String | `#ffffff` | Header bar background. |
-| **Body background** | String | `#ffffff` | Scrollable content area background. |
-| **Title color** | String | `#1a2b4b` | Title text and optional header icon color. |
-| **Control color** | String | `#1a2b4b` | Minimize (−) and Close (×) icon color. |
-| **Header border color** | String | `#e8eaed` | Color of the 1px divider under the header. |
+| **Icon class** | String | — | CSS class before the title in header and dock (e.g. `glyphicon glyphicon-file`). Empty = no icon. Uses Title color in header; Tab text color on the dock. |
+| **Show overlay** | Boolean | `Yes` | Dims the page behind the panel and **traps focus** inside (true modal). Off = page stays interactive, no focus trap; Close on overlay click is ignored. |
+| **Close on overlay click** | Boolean | `No` | If overlay is shown, click dimmer to close (same as header Close: On close + Is open = false). Default No avoids accidental dismiss. |
+| **Overlay color** | String | `rgba(15, 23, 42, 0.12)` | Dimmer color (`#hex`, `rgb()`, `rgba()`). Lower alpha = lighter. Only when Show overlay is Yes. |
+| **Panel background** | String | `#ffffff` | Outer shell background (hex / rgb / rgba). |
+| **Header background** | String | `#ffffff` | Header bar (title, icon, controls). Pair with Title color and Control color. |
+| **Body background** | String | `#ffffff` | Scrollable content area under the header. |
+| **Title color** | String | `#1a2b4b` | Title text and optional header icon. Use strong contrast vs Header background. |
+| **Control color** | String | `#1a2b4b` | Minimize (−) and Close (×) in the **header** only (dock icons use Tab text color). |
+| **Header border color** | String | `#e8eaed` | 1px divider under the header. |
 
 ### Appearance — panel border & shadow
 
 | Property | Type | Default | Explanation |
 |----------|------|---------|-------------|
-| **Panel border color** | String | `#e5e7eb` | Outer border color (visible when width &gt; 0). |
-| **Panel border width** | String | `0` | e.g. `0`, `1px`, `2px`. |
-| **Panel border radius** | String | `0` | e.g. `0` (flush), `8px`, `12px`. |
-| **Panel box shadow** | String | *(empty)* | Optional CSS `box-shadow`. Leave empty for the default side shadow. Example: `0 8px 32px rgba(0,0,0,0.18)`. |
+| **Panel border color** | String | `#e5e7eb` | Outer border color (visible when border width &gt; 0). |
+| **Panel border width** | String | `0` | e.g. `0`, `1px`, `2px`. Use a visible border when the panel sits over busy content. |
+| **Panel border radius** | String | `0` | `0` = flush side panel; `8px` / `12px` = rounded (useful when dragged away from the edge). |
+| **Panel box shadow** | String | *(empty)* | Optional CSS `box-shadow`. Empty = default side shadow from dock side. Example: `0 8px 32px rgba(0,0,0,0.18)`. |
 
 ### Appearance — dock tab
 
 | Property | Type | Default | Explanation |
 |----------|------|---------|-------------|
-| **Tab background** | String | `#cfe8ff` | Pill fill color. Use different pastels per instance (`#cfe8ff`, `#ffe4c4`, `#d4edda`, `#f8d7da`). |
-| **Tab text color** | String | `#1a2b4b` | Title and Maximize/Close icon color on the tab. |
-| **Tab border color** | String | `rgba(26, 43, 75, 0.06)` | Tab border color. |
-| **Tab border width** | String | `1px` | e.g. `0`, `1px`. |
-| **Tab border radius** | String | `8px` | e.g. `8px`, `12px`, `999px`. |
+| **Tab background** | String | `#cfe8ff` | Pill fill. Use different pastels per instance (`#cfe8ff`, `#ffe4c4`, `#d4edda`, `#f8d7da`) so minimized tabs are easy to tell apart. |
+| **Tab text color** | String | `#1a2b4b` | Tab title, icon, Maximize, and Close. Dark on light pastel works best. |
+| **Tab border color** | String | `rgba(26, 43, 75, 0.06)` | Tab border (visible when width &gt; 0). |
+| **Tab border width** | String | `1px` | `0` = no border; `1px` = light outline against the page. |
+| **Tab border radius** | String | `8px` | e.g. `8px`, `12px`, `999px` (full pill). |
 
 ### Events
 
 | Property | Type | When it runs |
 |----------|------|--------------|
-| **On open** | Action | Modal opens from **closed** (trigger or Is open = true). Not on restore from minimized. |
-| **On close** | Action | Modal fully closed (header/dock Close, Escape key, overlay click if enabled, or Is open = false). |
-| **On minimize** | Action | User clicks Minimize (−). Content stays mounted. |
-| **On maximize** | Action | User restores from a dock tab. Not on initial open. |
+| **On open** | Action | Opens from **closed** (trigger or Is open = true). Not on restore from minimized. Not again when the widget only re-asserts Is open after a short remount. Use to load draft / prepare Content. |
+| **On close** | Action | Fully closed: header/dock Close, Escape (topmost maximized only), overlay click if enabled, or Is open = false. Not on minimize. Use to clear drafts, commit, or refresh lists. |
+| **On minimize** | Action | User clicks Minimize (−). Becomes a dock tab; Content stays mounted; Is open stays true. Optional analytics / soft-save. |
+| **On maximize** | Action | Restore from a dock tab only. Not on initial open. Use to refresh Content or refocus a field. |
 
 ---
 
