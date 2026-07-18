@@ -4,6 +4,8 @@ import { ConveyModalPopupPreviewProps } from "../typings/ConveyModalPopupProps";
 export function preview(props: ConveyModalPopupPreviewProps): ReactElement {
     const {
         title,
+        trigger,
+        content,
         dockPosition,
         width,
         height,
@@ -23,17 +25,27 @@ export function preview(props: ConveyModalPopupPreviewProps): ReactElement {
 
     const resolvedTitle = typeof title === "string" && title.trim() ? title : "Convey Modal Popup";
 
+    // Render the real dropzone renderers so widgets can be dropped, pasted,
+    // and moved into Trigger and Content in Studio Pro design mode.
+    const TriggerRenderer = trigger.renderer;
+    const ContentRenderer = content.renderer;
+
     return (
         <div className="convey-modal-popup convey-modal-popup--preview">
-            <div className="convey-modal-popup__trigger">
-                <em>Trigger dropzone</em>
+            <div className="convey-modal-popup__trigger" style={{ display: "block" }}>
+                <TriggerRenderer caption="Trigger — place widgets that open the modal">
+                    <div style={{ minHeight: 36 }} />
+                </TriggerRenderer>
             </div>
             <div
                 className={`convey-modal-panel convey-modal-panel--${dockPosition || "right"}`}
                 style={{
                     position: "relative",
                     width: width || "240px",
-                    height: height === "100%" ? "160px" : height || "160px",
+                    height: "auto",
+                    minHeight: height === "100%" ? "160px" : height || "160px",
+                    maxHeight: "none",
+                    overflow: "visible",
                     marginTop: 8,
                     backgroundColor: panelBackgroundColor || "#ffffff",
                     borderColor: panelBorderColor || "#e5e7eb",
@@ -50,8 +62,13 @@ export function preview(props: ConveyModalPopupPreviewProps): ReactElement {
                         {resolvedTitle}
                     </h2>
                 </header>
-                <div className="convey-modal-panel__body" style={{ backgroundColor: bodyBackgroundColor || "#ffffff" }}>
-                    <em>Content dropzone</em>
+                <div
+                    className="convey-modal-panel__body"
+                    style={{ backgroundColor: bodyBackgroundColor || "#ffffff", overflow: "visible" }}
+                >
+                    <ContentRenderer caption="Content — place the modal body widgets">
+                        <div style={{ minHeight: 80 }} />
+                    </ContentRenderer>
                 </div>
             </div>
             <div className="convey-modal-dock" style={{ position: "relative", marginTop: 8 }}>

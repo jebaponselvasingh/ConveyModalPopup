@@ -10,8 +10,11 @@ import {
     useState
 } from "react";
 import { createPortal } from "react-dom";
+import { panelRegistry } from "../utils/panelRegistry";
 
 export type DockPosition = "left" | "right";
+
+export type MultiOpenBehavior = "beside" | "overlap";
 
 export type DragOffset = { x: number; y: number };
 
@@ -30,9 +33,11 @@ export interface PanelAppearance {
 }
 
 export interface ModalPanelProps {
+    instanceId: string;
     title: string;
     iconClass?: string;
     dockPosition: DockPosition;
+    multiOpenBehavior: MultiOpenBehavior;
     width: string;
     height: string;
     topOffset: string;
@@ -99,9 +104,11 @@ function clampOffset(next: DragOffset, bounds: ClampBounds): DragOffset {
 }
 
 export function ModalPanel({
+    instanceId,
     title,
     iconClass,
     dockPosition,
+    multiOpenBehavior,
     width,
     height,
     topOffset,
@@ -122,10 +129,48 @@ export function ModalPanel({
     const dragOffsetRef = useRef(dragOffset);
     const previouslyFocusedRef = useRef<HTMLElement | null>(null);
     const [isDragging, setIsDragging] = useState(false);
+    const [registryInsetPx, setRegistryInsetPx] = useState(0);
+    const dockInsetPx = multiOpenBehavior === "beside" && visible ? registryInsetPx : 0;
 
     useEffect(() => {
         dragOffsetRef.current = dragOffset;
     }, [dragOffset]);
+
+    // Register / unregister with the shared panel registry when maximized,
+    // so siblings can compute side-by-side insets.
+    useEffect(() => {
+        if (!visible || multiOpenBehavior !== "beside") {
+            panelRegistry.unregister(instanceId);
+            return;
+        }
+
+        const sync = (): void => {
+            const panel = panelRef.current;
+            const widthPx = panel?.getBoundingClientRect().width || 0;
+            panelRegistry.register(instanceId, dockPosition, widthPx);
+            setRegistryInsetPx(panelRegistry.getInset(instanceId, dockPosition, widthPx));
+        };
+
+        // Measure after layout so % / vw widths resolve to pixels.
+        const raf = requestAnimationFrame(sync);
+        const unsubscribe = panelRegistry.subscribe(() => {
+            const panel = panelRef.current;
+            const widthPx = panel?.getBoundingClientRect().width || 0;
+            setRegistryInsetPx(panelRegistry.getInset(instanceId, dockPosition, widthPx));
+        });
+
+        const handleResize = (): void => {
+            sync();
+        };
+        window.addEventListener("resize", handleResize);
+
+        return () => {
+            cancelAnimationFrame(raf);
+            unsubscribe();
+            window.removeEventListener("resize", handleResize);
+            panelRegistry.unregister(instanceId);
+        };
+    }, [dockPosition, instanceId, multiOpenBehavior, visible]);
 
     // Move focus into the dialog when it becomes visible; return it to the
     // previously focused element (usually the trigger) when hidden or minimized.
@@ -143,8 +188,9 @@ export function ModalPanel({
     useEffect(() => {
         return () => {
             restorePreviousFocus(previouslyFocusedRef);
+            panelRegistry.unregister(instanceId);
         };
-    }, []);
+    }, [instanceId]);
 
     // Re-clamp the drag offset when the viewport shrinks so the panel
     // cannot end up stranded off-screen after a resize or rotation.
@@ -292,12 +338,14 @@ export function ModalPanel({
         return null;
     }
 
+    const insetPx = dockInsetPx;
+
     const panelStyle: CSSProperties = {
         width,
         height,
         top: topOffset,
         zIndex: zIndex + 1,
-        [dockPosition]: 0,
+        [dockPosition]: insetPx,
         backgroundColor: appearance.panelBackgroundColor,
         borderColor: appearance.panelBorderColor,
         borderWidth: appearance.panelBorderWidth,

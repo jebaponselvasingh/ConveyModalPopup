@@ -8,6 +8,8 @@ import { ComponentType, CSSProperties, ReactNode } from "react";
 
 export type DockPositionEnum = "right" | "left";
 
+export type MultiOpenBehaviorEnum = "beside" | "overlap";
+
 export interface ConveyModalPopupContainerProps {
     name: string;
     class: string;
@@ -24,6 +26,7 @@ export interface ConveyModalPopupContainerProps {
     topOffset: string;
     zIndex: number;
     enableDrag: boolean;
+    multiOpenBehavior: MultiOpenBehaviorEnum;
     iconClass: string;
     showOverlay: boolean;
     closeOnOverlayClick: boolean;
@@ -71,6 +74,7 @@ export interface ConveyModalPopupPreviewProps {
     topOffset: string;
     zIndex: number | null;
     enableDrag: boolean;
+    multiOpenBehavior: MultiOpenBehaviorEnum;
     iconClass: string;
     showOverlay: boolean;
     closeOnOverlayClick: boolean;

@@ -61,6 +61,14 @@
                 <caption>Enable drag</caption>
                 <description>When true, the user can drag the maximized panel by its header to any position on the screen. Form fields in Content remain usable (only the header is the drag handle). Minimize, maximize, and close still work normally. The dragged position is kept while minimized and resets when the modal is closed.</description>
             </property>
+            <property key="multiOpenBehavior" type="enumeration" defaultValue="beside">
+                <caption>When multiple open</caption>
+                <description>How maximized panels are arranged when more than one Convey Modal Popup is open on the same dock side. Open beside places each new panel next to earlier ones (first at the edge, next beside it). Overlap stacks them on top of each other at the dock edge (previous behavior).</description>
+                <enumerationValues>
+                    <enumerationValue key="beside">Open beside</enumerationValue>
+                    <enumerationValue key="overlap">Overlap</enumerationValue>
+                </enumerationValues>
+            </property>
         </propertyGroup>
         <propertyGroup caption="Appearance">
             <property key="iconClass" type="string" required="false">

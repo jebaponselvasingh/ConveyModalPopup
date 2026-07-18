@@ -138,6 +138,7 @@ export function check(values: ConveyModalPopupPreviewProps): Problem[] {
 export function getPreview(values: ConveyModalPopupPreviewProps, _isDarkMode: boolean): PreviewProps {
     const title = typeof values.title === "string" && values.title.trim() ? values.title : "Convey Modal Popup";
     const dragHint = values.enableDrag === false ? "drag off" : "draggable header";
+    const multiHint = values.multiOpenBehavior === "overlap" ? "overlap" : "beside";
 
     return {
         type: "Container",
@@ -147,7 +148,7 @@ export function getPreview(values: ConveyModalPopupPreviewProps, _isDarkMode: bo
         children: [
             {
                 type: "Text",
-                content: `${title} (${values.dockPosition || "right"}, ${dragHint})`,
+                content: `${title} (${values.dockPosition || "right"}, ${dragHint}, ${multiHint})`,
                 bold: true,
                 fontSize: 12
             },

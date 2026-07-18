@@ -11,15 +11,16 @@ import {
 } from "react";
 import { ActionValue, DynamicValue, EditableValue, ValueStatus } from "mendix";
 import classNames from "classnames";
-import { DragOffset, ModalPanel } from "./components/ModalPanel";
+import { DragOffset, ModalPanel, MultiOpenBehavior } from "./components/ModalPanel";
 import { SharedDockBar } from "./components/SharedDockBar";
 import { dockRegistry } from "./utils/dockRegistry";
 import { modalStack } from "./utils/modalStack";
+import { modalStateStore, StoredModalUiState } from "./utils/modalStateStore";
 import { ConveyModalPopupContainerProps } from "../typings/ConveyModalPopupProps";
 
 import "./ui/ConveyModalPopup.css";
 
-type ModalUiState = "closed" | "maximized" | "minimized";
+type ModalUiState = StoredModalUiState;
 
 const ZERO_OFFSET: DragOffset = { x: 0, y: 0 };
 
@@ -87,6 +88,10 @@ function renderContent(content: ReactNode | undefined, datasource: DynamicValue<
     );
 }
 
+function resolveMultiOpenBehavior(value: string | undefined): MultiOpenBehavior {
+    return value === "overlap" ? "overlap" : "beside";
+}
+
 export function ConveyModalPopup(props: ConveyModalPopupContainerProps): ReactElement {
     const {
         name,
@@ -104,6 +109,7 @@ export function ConveyModalPopup(props: ConveyModalPopupContainerProps): ReactEl
         topOffset,
         zIndex,
         enableDrag,
+        multiOpenBehavior: multiOpenBehaviorProp,
         iconClass,
         showOverlay,
         closeOnOverlayClick,
@@ -129,16 +135,29 @@ export function ConveyModalPopup(props: ConveyModalPopupContainerProps): ReactEl
         onMaximize
     } = props;
 
+    const multiOpenBehavior = resolveMultiOpenBehavior((multiOpenBehaviorProp as string | undefined) ?? "beside");
+
     // useId alone is only unique within one React root; combining it with the widget
     // name keeps ids unique across roots and across repeated instances in list rows.
     const reactId = useId();
     const instanceId = `${name}-${reactId}`;
-    const [uiState, setUiState] = useState<ModalUiState>(() => (isOpen?.value === true ? "maximized" : "closed"));
-    const [dragOffset, setDragOffset] = useState<DragOffset>(ZERO_OFFSET);
+
+    // Restore open/minimized state after a Mendix remount (e.g. datasource refresh
+    // that replaces the Data view object). Fresh navigations have no recent entry.
+    const [restored] = useState(() => modalStateStore.take(name));
+    const [uiState, setUiState] = useState<ModalUiState>(() => {
+        if (restored) {
+            return restored.uiState;
+        }
+        return isOpen?.value === true ? "maximized" : "closed";
+    });
+    const [dragOffset, setDragOffset] = useState<DragOffset>(() => (restored ? restored.dragOffset : ZERO_OFFSET));
     const [triggerHasInteractiveChild, setTriggerHasInteractiveChild] = useState(false);
     const triggerRef = useRef<HTMLDivElement | null>(null);
     const uiStateRef = useRef(uiState);
+    const dragOffsetRef = useRef(dragOffset);
     const skipAttributeSyncRef = useRef(false);
+    const restoredOpenRef = useRef(restored != null && restored.uiState !== "closed");
     const callbacksRef = useRef({
         onOpen,
         onClose,
@@ -152,8 +171,32 @@ export function ConveyModalPopup(props: ConveyModalPopupContainerProps): ReactEl
     }, [uiState]);
 
     useEffect(() => {
+        dragOffsetRef.current = dragOffset;
+    }, [dragOffset]);
+
+    useEffect(() => {
         callbacksRef.current = { onOpen, onClose, onMinimize, onMaximize, isOpen };
     }, [isOpen, onClose, onMaximize, onMinimize, onOpen]);
+
+    // Persist state so a remount within TTL can restore open/minimized + drag.
+    useEffect(() => {
+        modalStateStore.save(name, uiState, dragOffset);
+    }, [dragOffset, name, uiState]);
+
+    // After remount with restored open state, re-assert Is open = true when the
+    // new object still has false (transient refresh), instead of closing.
+    useEffect(() => {
+        if (!restoredOpenRef.current || !isOpen) {
+            return;
+        }
+        if (isOpen.status !== "available") {
+            return;
+        }
+        if (isOpen.value !== true && uiStateRef.current !== "closed") {
+            skipAttributeSyncRef.current = setOpenAttribute(isOpen, true);
+        }
+        restoredOpenRef.current = false;
+    }, [isOpen]);
 
     const resolvedTitle = readText(title, "Modal");
     const resolvedIconClass = iconClass?.trim() || undefined;
@@ -201,7 +244,8 @@ export function ConveyModalPopup(props: ConveyModalPopupContainerProps): ReactEl
         skipAttributeSyncRef.current = setOpenAttribute(callbacksRef.current.isOpen, false);
         executeAction(callbacksRef.current.onClose);
         dockRegistry.unregister(instanceId);
-    }, [instanceId]);
+        modalStateStore.clear(name);
+    }, [instanceId, name]);
 
     const minimize = useCallback(() => {
         setUiState("minimized");
@@ -231,11 +275,13 @@ export function ConveyModalPopup(props: ConveyModalPopupContainerProps): ReactEl
         resolvedTitle
     ]);
 
+    // Keep dock tab registered while minimized (including after remount restore).
     useEffect(() => {
         if (uiState !== "minimized") {
             return;
         }
-        dockRegistry.update(instanceId, {
+        dockRegistry.register({
+            id: instanceId,
             title: resolvedTitle,
             tabColor: resolvedTabColor,
             tabTextColor: resolvedTabTextColor,
@@ -268,6 +314,11 @@ export function ConveyModalPopup(props: ConveyModalPopupContainerProps): ReactEl
             skipAttributeSyncRef.current = false;
             return;
         }
+        // Ignore the first attribute sync after a remount restore — the new
+        // object's Is open may still be false until we re-assert it.
+        if (restoredOpenRef.current) {
+            return;
+        }
         if (isOpen.status !== "available") {
             return;
         }
@@ -279,16 +330,19 @@ export function ConveyModalPopup(props: ConveyModalPopupContainerProps): ReactEl
             setUiState("closed");
             setDragOffset(ZERO_OFFSET);
             dockRegistry.unregister(instanceId);
+            modalStateStore.clear(name);
             executeAction(onClose);
         }
-    }, [instanceId, isOpen, onClose, onOpen]);
+    }, [instanceId, isOpen, name, onClose, onOpen]);
 
     useEffect(() => {
         return () => {
+            // Snapshot latest state for a possible remount (refresh).
+            modalStateStore.save(name, uiStateRef.current, dragOffsetRef.current);
             dockRegistry.unregister(instanceId);
             modalStack.remove(instanceId);
         };
-    }, [instanceId]);
+    }, [instanceId, name]);
 
     // Track maximize order so Escape only closes the topmost open modal.
     useEffect(() => {
@@ -374,9 +428,11 @@ export function ConveyModalPopup(props: ConveyModalPopupContainerProps): ReactEl
 
             {(uiState === "maximized" || uiState === "minimized") && (
                 <ModalPanel
+                    instanceId={instanceId}
                     title={resolvedTitle}
                     iconClass={resolvedIconClass}
                     dockPosition={dockPosition}
+                    multiOpenBehavior={multiOpenBehavior}
                     width={resolvedWidth}
                     height={resolvedHeight}
                     topOffset={resolvedTopOffset}

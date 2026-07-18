@@ -20,7 +20,9 @@ Dockable side modal for Mendix web apps. Opens on the **left** or **right**, min
 - Optional **Data source** (single object) so Content widgets get Data view–like object context
 - Open via **Trigger** dropzone and/or a Boolean **Is open** attribute (two-way)
 - Shared dock across multiple widget instances on the same page
+- **When multiple open**: stack beside each other on the same dock side (default), or overlap
 - Content stays mounted while minimized (form state preserved)
+- Survives Mendix Data view / datasource remounts without closing (re-asserts **Is open**)
 - **Escape** closes the topmost open modal
 - Focus moves into the panel on open, is trapped inside while the overlay is shown, and returns to the trigger on close
 - Dragged panel is re-clamped on window resize so it never ends up off-screen
@@ -73,9 +75,28 @@ Output: `dist/1.0.0/indium.ConveyModalPopup.mpk`
 4. Optionally set **Data source** to the object to edit (Context / Microflow / Nanoflow / Listen to widget).
 5. Drop Text boxes and other widgets into **Content**, binding attributes of that object.
 6. Optionally bind **Is open** to a Boolean attribute.
-7. Under **Layout**, set **Dock position**, **Width**, **Height**, and leave **Enable drag** on if users should move the panel.
+7. Under **Layout**, set **Dock position**, **Width**, **Height**, **When multiple open** (Open beside by default), and leave **Enable drag** on if users should move the panel.
 8. Under **Appearance**, set **Tab background** (pastel) so each modal is easy to tell apart when minimized.
 9. Run the app: open → drag by header → Minimize → dock tab → Maximize restores position → Close resets position.
+
+---
+
+## When multiple open
+
+| Mode | Behavior |
+|------|----------|
+| **Open beside** (default) | Each maximized panel on the same dock side is offset by the width of panels opened before it (+ 8px gap). First sits at the edge; next opens beside it. Closing/minimizing one reflows the others. If combined widths exceed the viewport, inset is capped so ~40px stays visible. |
+| **Overlap** | All maximized panels share the dock edge (previous stacking behavior). |
+
+Panels on **left** and **right** are arranged independently. Drag offsets still apply on top of the home inset.
+
+---
+
+## Is open and datasource refresh
+
+Bind **Is open** to a Boolean on a **stable** helper object (page parameter or a committed non-persistent entity that is not recreated on every field change). The widget restores open/minimized state across short remounts (e.g. Data view refresh) and re-asserts `Is open = true` when a fresh object still has `false`.
+
+If the surrounding Data view replaces its object, Mendix may remount Content widgets and reset unsaved field values — that is platform behavior, not the modal shell.
 
 ---
 
@@ -130,6 +151,7 @@ All of these appear in the widget properties pane in Studio Pro. Descriptions be
 | **Top offset** | String | No | `0` | CSS `top`. Use e.g. `64px` to clear a top nav bar. |
 | **Z-index** | Integer | No | `1000` | Overlay uses this value; panel uses Z-index + 1. Shared dock is fixed at **1100**. Keep panel Z-index below 1100 if dock tabs must stay above the panel. |
 | **Enable drag** | Boolean | No | `Yes` | Drag maximized panel by header. Position kept while minimized; resets on close. |
+| **When multiple open** | Enumeration | Yes | `Open beside` | **Open beside** places each new maximized panel next to earlier ones on the same dock side. **Overlap** stacks them at the dock edge. |
 
 ### Appearance — overlay & panel colors
 
@@ -199,6 +221,8 @@ All of these appear in the widget properties pane in Studio Pro. Descriptions be
 
 Place several **Convey Modal Popup** widgets on the same page (e.g. one per special request type). Each minimized instance appears as its own tab in the **same** bottom dock. Give each a distinct **Tab background** and **Title**.
 
+With **When multiple open** = Open beside, maximized panels on the same dock side tile next to each other instead of stacking. Set **Overlap** if you prefer the previous stacked look.
+
 ---
 
 ## Color & border tips
@@ -225,15 +249,18 @@ npm run lint         # ESLint + Prettier check
 ```
 src/
   ConveyModalPopup.xml          # Studio properties (tooltips for developers)
-  ConveyModalPopup.tsx          # Orchestrator (state + isOpen sync)
+  ConveyModalPopup.tsx          # Orchestrator (state + isOpen sync + remount restore)
   ConveyModalPopup.editorConfig.ts
   ConveyModalPopup.editorPreview.tsx
   components/
-    ModalPanel.tsx              # Maximized side panel
+    ModalPanel.tsx              # Maximized side panel (+ side-by-side inset)
     SharedDockBar.tsx           # Shared bottom dock (single owner)
     MinimizedTab.tsx            # Dock pill UI
   utils/
     dockRegistry.ts             # Cross-instance dock registry
+    panelRegistry.ts            # Cross-instance maximized panel insets
+    modalStack.ts               # Escape-key topmost modal stack
+    modalStateStore.ts          # Persist open state across short remounts
   ui/
     ConveyModalPopup.css
 ```
