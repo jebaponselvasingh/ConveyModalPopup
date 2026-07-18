@@ -17,6 +17,11 @@ function readText(value?: DynamicValue<string>, fallback = ""): string {
     return value.value;
 }
 
+function cssValue(value: string | undefined, fallback: string): string {
+    const trimmed = value?.trim();
+    return trimmed || fallback;
+}
+
 function executeAction(action?: ActionValue): void {
     if (action && action.canExecute && !action.isExecuting) {
         action.execute();
@@ -43,10 +48,25 @@ export function ConveyModalPopup(props: ConveyModalPopupContainerProps): ReactEl
         height,
         topOffset,
         zIndex,
-        tabColor,
         iconClass,
         showOverlay,
         closeOnOverlayClick,
+        overlayColor,
+        panelBackgroundColor,
+        headerBackgroundColor,
+        bodyBackgroundColor,
+        titleColor,
+        controlColor,
+        headerBorderColor,
+        panelBorderColor,
+        panelBorderWidth,
+        panelBorderRadius,
+        panelBoxShadow,
+        tabColor,
+        tabTextColor,
+        tabBorderColor,
+        tabBorderWidth,
+        tabBorderRadius,
         onOpen,
         onClose,
         onMinimize,
@@ -74,12 +94,31 @@ export function ConveyModalPopup(props: ConveyModalPopupContainerProps): ReactEl
     }, [isOpen, onClose, onMaximize, onMinimize, onOpen]);
 
     const resolvedTitle = readText(title, "Modal");
-    const resolvedTabColor = tabColor?.trim() || "#cfe8ff";
     const resolvedIconClass = iconClass?.trim() || undefined;
-    const resolvedWidth = width?.trim() || "480px";
-    const resolvedHeight = height?.trim() || "100%";
-    const resolvedTopOffset = topOffset?.trim() || "0";
+    const resolvedWidth = cssValue(width, "480px");
+    const resolvedHeight = cssValue(height, "100%");
+    const resolvedTopOffset = cssValue(topOffset, "0");
     const resolvedZIndex = typeof zIndex === "number" ? zIndex : 1000;
+
+    const appearance = {
+        overlayColor: cssValue(overlayColor, "rgba(15, 23, 42, 0.12)"),
+        panelBackgroundColor: cssValue(panelBackgroundColor, "#ffffff"),
+        headerBackgroundColor: cssValue(headerBackgroundColor, "#ffffff"),
+        bodyBackgroundColor: cssValue(bodyBackgroundColor, "#ffffff"),
+        titleColor: cssValue(titleColor, "#1a2b4b"),
+        controlColor: cssValue(controlColor, "#1a2b4b"),
+        headerBorderColor: cssValue(headerBorderColor, "#e8eaed"),
+        panelBorderColor: cssValue(panelBorderColor, "#e5e7eb"),
+        panelBorderWidth: cssValue(panelBorderWidth, "0"),
+        panelBorderRadius: cssValue(panelBorderRadius, "0"),
+        panelBoxShadow: panelBoxShadow?.trim() || undefined
+    };
+
+    const resolvedTabColor = cssValue(tabColor, "#cfe8ff");
+    const resolvedTabTextColor = cssValue(tabTextColor, "#1a2b4b");
+    const resolvedTabBorderColor = cssValue(tabBorderColor, "rgba(26, 43, 75, 0.06)");
+    const resolvedTabBorderWidth = cssValue(tabBorderWidth, "1px");
+    const resolvedTabBorderRadius = cssValue(tabBorderRadius, "8px");
 
     const openMaximized = useCallback(() => {
         const previous = uiStateRef.current;
@@ -110,13 +149,27 @@ export function ConveyModalPopup(props: ConveyModalPopupContainerProps): ReactEl
             id: instanceId,
             title: resolvedTitle,
             tabColor: resolvedTabColor,
+            tabTextColor: resolvedTabTextColor,
+            tabBorderColor: resolvedTabBorderColor,
+            tabBorderWidth: resolvedTabBorderWidth,
+            tabBorderRadius: resolvedTabBorderRadius,
             iconClass: resolvedIconClass,
             onMaximize: openMaximized,
             onClose: close
         });
-    }, [close, instanceId, openMaximized, resolvedIconClass, resolvedTabColor, resolvedTitle]);
+    }, [
+        close,
+        instanceId,
+        openMaximized,
+        resolvedIconClass,
+        resolvedTabBorderColor,
+        resolvedTabBorderRadius,
+        resolvedTabBorderWidth,
+        resolvedTabColor,
+        resolvedTabTextColor,
+        resolvedTitle
+    ]);
 
-    // Keep dock tab metadata in sync while minimized
     useEffect(() => {
         if (uiState !== "minimized") {
             return;
@@ -124,13 +177,28 @@ export function ConveyModalPopup(props: ConveyModalPopupContainerProps): ReactEl
         dockRegistry.update(instanceId, {
             title: resolvedTitle,
             tabColor: resolvedTabColor,
+            tabTextColor: resolvedTabTextColor,
+            tabBorderColor: resolvedTabBorderColor,
+            tabBorderWidth: resolvedTabBorderWidth,
+            tabBorderRadius: resolvedTabBorderRadius,
             iconClass: resolvedIconClass,
             onMaximize: openMaximized,
             onClose: close
         });
-    }, [close, instanceId, openMaximized, resolvedIconClass, resolvedTabColor, resolvedTitle, uiState]);
+    }, [
+        close,
+        instanceId,
+        openMaximized,
+        resolvedIconClass,
+        resolvedTabBorderColor,
+        resolvedTabBorderRadius,
+        resolvedTabBorderWidth,
+        resolvedTabColor,
+        resolvedTabTextColor,
+        resolvedTitle,
+        uiState
+    ]);
 
-    // Sync from Mendix boolean attribute
     useEffect(() => {
         if (!isOpen) {
             return;
@@ -206,6 +274,7 @@ export function ConveyModalPopup(props: ConveyModalPopupContainerProps): ReactEl
                     zIndex={resolvedZIndex}
                     showOverlay={showOverlay}
                     closeOnOverlayClick={closeOnOverlayClick}
+                    appearance={appearance}
                     visible={uiState === "maximized"}
                     onMinimize={minimize}
                     onClose={close}

@@ -3,6 +3,20 @@ import { createPortal } from "react-dom";
 
 export type DockPosition = "left" | "right";
 
+export interface PanelAppearance {
+    overlayColor: string;
+    panelBackgroundColor: string;
+    headerBackgroundColor: string;
+    bodyBackgroundColor: string;
+    titleColor: string;
+    controlColor: string;
+    headerBorderColor: string;
+    panelBorderColor: string;
+    panelBorderWidth: string;
+    panelBorderRadius: string;
+    panelBoxShadow?: string;
+}
+
 export interface ModalPanelProps {
     title: string;
     iconClass?: string;
@@ -13,6 +27,7 @@ export interface ModalPanelProps {
     zIndex: number;
     showOverlay: boolean;
     closeOnOverlayClick: boolean;
+    appearance: PanelAppearance;
     visible: boolean;
     children?: ReactNode;
     onMinimize: () => void;
@@ -29,6 +44,7 @@ export function ModalPanel({
     zIndex,
     showOverlay,
     closeOnOverlayClick,
+    appearance,
     visible,
     children,
     onMinimize,
@@ -43,11 +59,36 @@ export function ModalPanel({
         height,
         top: topOffset,
         zIndex: zIndex + 1,
-        [dockPosition]: 0
+        [dockPosition]: 0,
+        backgroundColor: appearance.panelBackgroundColor,
+        borderColor: appearance.panelBorderColor,
+        borderWidth: appearance.panelBorderWidth,
+        borderStyle: appearance.panelBorderWidth === "0" || appearance.panelBorderWidth === "0px" ? "none" : "solid",
+        borderRadius: appearance.panelBorderRadius,
+        ...(appearance.panelBoxShadow ? { boxShadow: appearance.panelBoxShadow } : {})
     };
 
     const overlayStyle: CSSProperties = {
-        zIndex
+        zIndex,
+        backgroundColor: appearance.overlayColor
+    };
+
+    const headerStyle: CSSProperties = {
+        backgroundColor: appearance.headerBackgroundColor,
+        borderBottomColor: appearance.headerBorderColor,
+        color: appearance.titleColor
+    };
+
+    const titleStyle: CSSProperties = {
+        color: appearance.titleColor
+    };
+
+    const controlStyle: CSSProperties = {
+        color: appearance.controlColor
+    };
+
+    const bodyStyle: CSSProperties = {
+        backgroundColor: appearance.bodyBackgroundColor
     };
 
     return createPortal(
@@ -71,15 +112,20 @@ export function ModalPanel({
                 aria-modal="true"
                 aria-label={title}
             >
-                <header className="convey-modal-panel__header">
+                <header className="convey-modal-panel__header" style={headerStyle}>
                     <div className="convey-modal-panel__title-wrap">
-                        {iconClass ? <span className={`convey-modal-panel__icon ${iconClass}`} aria-hidden /> : null}
-                        <h2 className="convey-modal-panel__title">{title}</h2>
+                        {iconClass ? (
+                            <span className={`convey-modal-panel__icon ${iconClass}`} style={titleStyle} aria-hidden />
+                        ) : null}
+                        <h2 className="convey-modal-panel__title" style={titleStyle}>
+                            {title}
+                        </h2>
                     </div>
                     <div className="convey-modal-panel__actions">
                         <button
                             type="button"
                             className="convey-modal-panel__btn"
+                            style={controlStyle}
                             aria-label="Minimize"
                             title="Minimize"
                             onClick={onMinimize}
@@ -89,6 +135,7 @@ export function ModalPanel({
                         <button
                             type="button"
                             className="convey-modal-panel__btn"
+                            style={controlStyle}
                             aria-label="Close"
                             title="Close"
                             onClick={onClose}
@@ -97,7 +144,9 @@ export function ModalPanel({
                         </button>
                     </div>
                 </header>
-                <div className="convey-modal-panel__body">{children}</div>
+                <div className="convey-modal-panel__body" style={bodyStyle}>
+                    {children}
+                </div>
             </aside>
         </div>,
         document.body

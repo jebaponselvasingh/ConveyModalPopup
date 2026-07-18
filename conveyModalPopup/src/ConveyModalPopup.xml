@@ -4,25 +4,25 @@
         xmlns="http://www.mendix.com/widget/1.0/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.mendix.com/widget/1.0/ ../node_modules/mendix/custom_widget.xsd">
     <name>Convey Modal Popup</name>
-    <description>Dockable side modal that maximizes left/right and minimizes to a shared bottom tab bar</description>
+    <description>Dockable side modal that opens left or right, minimizes to a shared bottom tab bar, and supports configurable size, colors, and borders.</description>
     <icon/>
     <properties>
         <propertyGroup caption="General">
             <property key="title" type="textTemplate" required="false">
                 <caption>Title</caption>
-                <description>Shown in the panel header and the minimized dock tab</description>
+                <description>Text shown in the maximized panel header and on the minimized dock tab. Supports expressions and attribute values (e.g. 'Address Change' or $Request/Name).</description>
             </property>
             <property key="trigger" type="widgets" required="false">
                 <caption>Trigger</caption>
-                <description>Clickable content that opens the modal</description>
+                <description>Drop zone for widgets that open the modal when clicked (for example an Action Button, Icon, or Image). Configure either Trigger, Is open, or both. Nested clickable widgets inside the trigger will also open the modal.</description>
             </property>
             <property key="content" type="widgets" required="false">
                 <caption>Content</caption>
-                <description>Widgets shown inside the maximized panel body</description>
+                <description>Drop zone for the panel body. Place forms, data views, or any page widgets here. Content stays mounted while minimized so form values are preserved until the modal is closed.</description>
             </property>
             <property key="isOpen" type="attribute" required="false">
                 <caption>Is open</caption>
-                <description>Optional boolean attribute to open/close the modal from microflows or nanoflows</description>
+                <description>Optional Boolean attribute for two-way open/close control from microflows or nanoflows. Set true to open maximized; set false to close and remove the dock tab. The widget also writes to this attribute when the user opens or closes the modal. Place the widget in a context that provides this attribute (for example inside a Data view).</description>
                 <attributeTypes>
                     <attributeType name="Boolean"/>
                 </attributeTypes>
@@ -31,7 +31,7 @@
         <propertyGroup caption="Layout">
             <property key="dockPosition" type="enumeration" defaultValue="right">
                 <caption>Dock position</caption>
-                <description>Side of the screen where the maximized panel opens</description>
+                <description>Side of the viewport where the maximized panel appears. Right docks to the right edge; Left docks to the left edge.</description>
                 <enumerationValues>
                     <enumerationValue key="right">Right</enumerationValue>
                     <enumerationValue key="left">Left</enumerationValue>
@@ -39,55 +39,115 @@
             </property>
             <property key="width" type="string" required="true" defaultValue="480px">
                 <caption>Width</caption>
-                <description>CSS width of the maximized panel (e.g. 480px or 40%)</description>
+                <description>CSS width of the maximized panel. Examples: 480px, 40%, 30vw. Required.</description>
             </property>
             <property key="height" type="string" required="true" defaultValue="100%">
                 <caption>Height</caption>
-                <description>CSS height of the maximized panel (e.g. 100% or 90vh)</description>
+                <description>CSS height of the maximized panel. Examples: 100%, 90vh, 800px. Required. Use with Top offset when the panel should not cover the full viewport height.</description>
             </property>
             <property key="topOffset" type="string" required="false" defaultValue="0">
                 <caption>Top offset</caption>
-                <description>CSS top offset for the maximized panel (e.g. 0 or 64px)</description>
+                <description>CSS top position of the maximized panel. Examples: 0, 64px, 10vh. Use this to clear a top navigation bar.</description>
             </property>
             <property key="zIndex" type="integer" defaultValue="1000">
                 <caption>Z-index</caption>
-                <description>Stacking order of the panel and overlay</description>
+                <description>Stacking order for the overlay and panel. The panel uses Z-index + 1. The shared dock bar uses a fixed z-index of 1100. Keep panel Z-index below 1100 if dock tabs must stay clickable above the panel.</description>
             </property>
         </propertyGroup>
         <propertyGroup caption="Appearance">
-            <property key="tabColor" type="string" required="false" defaultValue="#cfe8ff">
-                <caption>Tab color</caption>
-                <description>Background color of the minimized dock tab (hex or CSS color)</description>
-            </property>
             <property key="iconClass" type="string" required="false">
                 <caption>Icon class</caption>
-                <description>Optional CSS class for the tab/header icon (e.g. glyphicon glyphicon-file)</description>
+                <description>Optional CSS class name for an icon shown before the title in the header and dock tab. Example from Atlas/Glyphicons: glyphicon glyphicon-file. Leave empty for no icon.</description>
             </property>
             <property key="showOverlay" type="boolean" defaultValue="true">
                 <caption>Show overlay</caption>
-                <description>Dim the page behind the maximized panel</description>
+                <description>When true, a dimmed overlay covers the page behind the maximized panel. When false, the page remains fully visible and interactive under the panel.</description>
             </property>
             <property key="closeOnOverlayClick" type="boolean" defaultValue="false">
                 <caption>Close on overlay click</caption>
-                <description>Close the modal when the dimmed overlay is clicked</description>
+                <description>When true and Show overlay is enabled, clicking the dimmed overlay closes the modal (same as the header Close button).</description>
+            </property>
+            <property key="overlayColor" type="string" required="false" defaultValue="rgba(15, 23, 42, 0.12)">
+                <caption>Overlay color</caption>
+                <description>Background color of the page dimmer. Accepts any CSS color: #000000, rgb(0,0,0), or rgba(15, 23, 42, 0.12). Lower alpha = lighter overlay.</description>
+            </property>
+            <property key="panelBackgroundColor" type="string" required="false" defaultValue="#ffffff">
+                <caption>Panel background</caption>
+                <description>Background color of the maximized panel shell. Accepts hex, rgb, or rgba. Example: #ffffff.</description>
+            </property>
+            <property key="headerBackgroundColor" type="string" required="false" defaultValue="#ffffff">
+                <caption>Header background</caption>
+                <description>Background color of the panel header bar (title and controls). Example: #ffffff or #f8fafc.</description>
+            </property>
+            <property key="bodyBackgroundColor" type="string" required="false" defaultValue="#ffffff">
+                <caption>Body background</caption>
+                <description>Background color of the scrollable content area below the header. Example: #ffffff or #f5f7f9.</description>
+            </property>
+            <property key="titleColor" type="string" required="false" defaultValue="#1a2b4b">
+                <caption>Title color</caption>
+                <description>Text color for the panel title and optional header icon. Example: #1a2b4b.</description>
+            </property>
+            <property key="controlColor" type="string" required="false" defaultValue="#1a2b4b">
+                <caption>Control color</caption>
+                <description>Color of the Minimize (−) and Close (×) icons in the panel header. Example: #1a2b4b.</description>
+            </property>
+            <property key="headerBorderColor" type="string" required="false" defaultValue="#e8eaed">
+                <caption>Header border color</caption>
+                <description>Color of the 1px divider line under the header. Example: #e8eaed.</description>
+            </property>
+            <property key="panelBorderColor" type="string" required="false" defaultValue="#e5e7eb">
+                <caption>Panel border color</caption>
+                <description>Border color around the maximized panel. Only visible when Panel border width is greater than 0. Example: #e5e7eb or #2b5ce7.</description>
+            </property>
+            <property key="panelBorderWidth" type="string" required="false" defaultValue="0">
+                <caption>Panel border width</caption>
+                <description>CSS border width for the maximized panel. Use 0 or 0px for no border; use 1px or 2px to show a border with Panel border color.</description>
+            </property>
+            <property key="panelBorderRadius" type="string" required="false" defaultValue="0">
+                <caption>Panel border radius</caption>
+                <description>CSS border-radius for the maximized panel corners. Use 0 for a flush side panel; use 8px or 12px for rounded corners.</description>
+            </property>
+            <property key="panelBoxShadow" type="string" required="false" defaultValue="">
+                <caption>Panel box shadow</caption>
+                <description>Optional CSS box-shadow override. Leave empty to keep the default side shadow. Example: 0 8px 32px rgba(0,0,0,0.18).</description>
+            </property>
+            <property key="tabColor" type="string" required="false" defaultValue="#cfe8ff">
+                <caption>Tab background</caption>
+                <description>Background (fill) color of the minimized dock tab pill. Use different pastel colors per modal instance to distinguish them. Examples: #cfe8ff, #ffe4c4, #d4edda, #f8d7da.</description>
+            </property>
+            <property key="tabTextColor" type="string" required="false" defaultValue="#1a2b4b">
+                <caption>Tab text color</caption>
+                <description>Color of the dock tab title text and the Maximize / Close icons. Example: #1a2b4b.</description>
+            </property>
+            <property key="tabBorderColor" type="string" required="false" defaultValue="rgba(26, 43, 75, 0.06)">
+                <caption>Tab border color</caption>
+                <description>Border color of the minimized dock tab. Only visible when Tab border width is greater than 0. Example: rgba(26, 43, 75, 0.06) or #cbd5e1.</description>
+            </property>
+            <property key="tabBorderWidth" type="string" required="false" defaultValue="1px">
+                <caption>Tab border width</caption>
+                <description>CSS border width for the dock tab. Use 0 or 0px for no border; use 1px (default) for a light outline.</description>
+            </property>
+            <property key="tabBorderRadius" type="string" required="false" defaultValue="8px">
+                <caption>Tab border radius</caption>
+                <description>CSS border-radius for the dock tab pill. Examples: 8px, 12px, 999px (fully rounded).</description>
             </property>
         </propertyGroup>
         <propertyGroup caption="Events">
             <property key="onOpen" type="action" required="false">
                 <caption>On open</caption>
-                <description>Action executed when the modal opens</description>
+                <description>Action (microflow, nanoflow, or Call nanoflow) executed when the modal opens from a closed state (trigger click or Is open set to true). Not fired when restoring from minimized.</description>
             </property>
             <property key="onClose" type="action" required="false">
                 <caption>On close</caption>
-                <description>Action executed when the modal closes</description>
+                <description>Action executed when the modal is fully closed (header Close, dock tab Close, overlay click if enabled, or Is open set to false). Use this to clear draft data or refresh lists.</description>
             </property>
             <property key="onMinimize" type="action" required="false">
                 <caption>On minimize</caption>
-                <description>Action executed when the modal is minimized to the dock</description>
+                <description>Action executed when the user clicks Minimize in the panel header. The modal becomes a dock tab; content stays mounted.</description>
             </property>
             <property key="onMaximize" type="action" required="false">
                 <caption>On maximize</caption>
-                <description>Action executed when the modal is restored from the dock</description>
+                <description>Action executed when the user restores the modal from a dock tab (Maximize on the tab). Not fired on the initial open from closed.</description>
             </property>
         </propertyGroup>
     </properties>

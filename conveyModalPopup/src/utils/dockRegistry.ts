@@ -2,6 +2,10 @@ export type DockItem = {
     id: string;
     title: string;
     tabColor: string;
+    tabTextColor: string;
+    tabBorderColor: string;
+    tabBorderWidth: string;
+    tabBorderRadius: string;
     iconClass?: string;
     onMaximize: () => void;
     onClose: () => void;

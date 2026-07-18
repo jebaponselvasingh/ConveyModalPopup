@@ -2,7 +2,7 @@
   "name": "conveymodalpopup",
   "widgetName": "ConveyModalPopup",
   "version": "1.0.0",
-  "description": "My widget description",
+  "description": "Dockable side modal that opens left or right, minimizes to a shared bottom tab bar, and supports configurable size, colors, and borders.",
   "copyright": "© Mendix Technology BV 2026. All rights reserved.",
   "author": "John",
   "engines": {
