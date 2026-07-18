@@ -29,6 +29,11 @@
     box-sizing: border-box;
 }
 
+/* Panel receives programmatic focus on open; no visible ring needed on the shell. */
+.convey-modal-panel:focus {
+    outline: none;
+}
+
 .convey-modal-panel--right {
     box-shadow: -4px 0 24px rgba(15, 23, 42, 0.12);
 }

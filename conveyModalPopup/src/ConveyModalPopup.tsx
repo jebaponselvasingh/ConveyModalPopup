@@ -1,5 +1,5 @@
 import {
-    KeyboardEvent,
+    KeyboardEvent as ReactKeyboardEvent,
     MouseEvent,
     ReactElement,
     ReactNode,
@@ -14,6 +14,7 @@ import classNames from "classnames";
 import { DragOffset, ModalPanel } from "./components/ModalPanel";
 import { SharedDockBar } from "./components/SharedDockBar";
 import { dockRegistry } from "./utils/dockRegistry";
+import { modalStack } from "./utils/modalStack";
 import { ConveyModalPopupContainerProps } from "../typings/ConveyModalPopupProps";
 
 import "./ui/ConveyModalPopup.css";
@@ -40,11 +41,15 @@ function executeAction(action?: ActionValue): void {
     }
 }
 
-function setOpenAttribute(isOpen: EditableValue<boolean> | undefined, next: boolean): void {
+function setOpenAttribute(isOpen: EditableValue<boolean> | undefined, next: boolean): boolean {
     if (isOpen && !isOpen.readOnly) {
         isOpen.setValue(next);
+        return true;
     }
+    return false;
 }
+
+const INTERACTIVE_SELECTOR = "button, a[href], input, select, textarea, [tabindex]";
 
 function renderContent(content: ReactNode | undefined, datasource: DynamicValue<unknown> | undefined): ReactNode {
     if (!datasource) {
@@ -84,6 +89,7 @@ function renderContent(content: ReactNode | undefined, datasource: DynamicValue<
 
 export function ConveyModalPopup(props: ConveyModalPopupContainerProps): ReactElement {
     const {
+        name,
         class: className,
         style,
         tabIndex,
@@ -123,9 +129,14 @@ export function ConveyModalPopup(props: ConveyModalPopupContainerProps): ReactEl
         onMaximize
     } = props;
 
-    const instanceId = useId();
+    // useId alone is only unique within one React root; combining it with the widget
+    // name keeps ids unique across roots and across repeated instances in list rows.
+    const reactId = useId();
+    const instanceId = `${name}-${reactId}`;
     const [uiState, setUiState] = useState<ModalUiState>(() => (isOpen?.value === true ? "maximized" : "closed"));
     const [dragOffset, setDragOffset] = useState<DragOffset>(ZERO_OFFSET);
+    const [triggerHasInteractiveChild, setTriggerHasInteractiveChild] = useState(false);
+    const triggerRef = useRef<HTMLDivElement | null>(null);
     const uiStateRef = useRef(uiState);
     const skipAttributeSyncRef = useRef(false);
     const callbacksRef = useRef({
@@ -174,8 +185,7 @@ export function ConveyModalPopup(props: ConveyModalPopupContainerProps): ReactEl
     const openMaximized = useCallback(() => {
         const previous = uiStateRef.current;
         setUiState("maximized");
-        skipAttributeSyncRef.current = true;
-        setOpenAttribute(callbacksRef.current.isOpen, true);
+        skipAttributeSyncRef.current = setOpenAttribute(callbacksRef.current.isOpen, true);
         dockRegistry.unregister(instanceId);
 
         if (previous === "closed") {
@@ -188,8 +198,7 @@ export function ConveyModalPopup(props: ConveyModalPopupContainerProps): ReactEl
     const close = useCallback(() => {
         setUiState("closed");
         setDragOffset(ZERO_OFFSET);
-        skipAttributeSyncRef.current = true;
-        setOpenAttribute(callbacksRef.current.isOpen, false);
+        skipAttributeSyncRef.current = setOpenAttribute(callbacksRef.current.isOpen, false);
         executeAction(callbacksRef.current.onClose);
         dockRegistry.unregister(instanceId);
     }, [instanceId]);
@@ -277,8 +286,52 @@ export function ConveyModalPopup(props: ConveyModalPopupContainerProps): ReactEl
     useEffect(() => {
         return () => {
             dockRegistry.unregister(instanceId);
+            modalStack.remove(instanceId);
         };
     }, [instanceId]);
+
+    // Track maximize order so Escape only closes the topmost open modal.
+    useEffect(() => {
+        if (uiState === "maximized") {
+            modalStack.push(instanceId);
+        } else {
+            modalStack.remove(instanceId);
+        }
+    }, [instanceId, uiState]);
+
+    useEffect(() => {
+        if (uiState !== "maximized") {
+            return;
+        }
+        const handleKeyDown = (event: KeyboardEvent): void => {
+            if (event.key === "Escape" && modalStack.isTop(instanceId)) {
+                event.stopPropagation();
+                close();
+            }
+        };
+        document.addEventListener("keydown", handleKeyDown);
+        return () => {
+            document.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [close, instanceId, uiState]);
+
+    // If the trigger contains its own interactive widget (e.g. an Action Button),
+    // don't add role="button"/tabIndex on the wrapper to avoid nested controls.
+    useEffect(() => {
+        const node = triggerRef.current;
+        if (!trigger || !node) {
+            return;
+        }
+        const detect = (): void => {
+            setTriggerHasInteractiveChild(node.querySelector(INTERACTIVE_SELECTOR) !== null);
+        };
+        detect();
+        const observer = new MutationObserver(detect);
+        observer.observe(node, { childList: true, subtree: true });
+        return () => {
+            observer.disconnect();
+        };
+    }, [trigger]);
 
     const handleTriggerClick = useCallback(
         (event: MouseEvent<HTMLDivElement>) => {
@@ -291,7 +344,7 @@ export function ConveyModalPopup(props: ConveyModalPopupContainerProps): ReactEl
     );
 
     const handleTriggerKeyDown = useCallback(
-        (event: KeyboardEvent<HTMLDivElement>) => {
+        (event: ReactKeyboardEvent<HTMLDivElement>) => {
             if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault();
                 if (uiStateRef.current === "closed" || uiStateRef.current === "minimized") {
@@ -308,11 +361,12 @@ export function ConveyModalPopup(props: ConveyModalPopupContainerProps): ReactEl
         <div className={classNames("convey-modal-popup", className)} style={style} tabIndex={tabIndex}>
             {trigger ? (
                 <div
+                    ref={triggerRef}
                     className="convey-modal-popup__trigger"
                     onClick={handleTriggerClick}
-                    onKeyDown={handleTriggerKeyDown}
-                    role="button"
-                    tabIndex={0}
+                    onKeyDown={triggerHasInteractiveChild ? undefined : handleTriggerKeyDown}
+                    role={triggerHasInteractiveChild ? undefined : "button"}
+                    tabIndex={triggerHasInteractiveChild ? undefined : 0}
                 >
                     {trigger}
                 </div>

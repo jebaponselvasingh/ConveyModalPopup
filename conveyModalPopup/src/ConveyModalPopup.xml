@@ -147,7 +147,7 @@
             </property>
             <property key="onClose" type="action" required="false">
                 <caption>On close</caption>
-                <description>Action executed when the modal is fully closed (header Close, dock tab Close, overlay click if enabled, or Is open set to false). Use this to clear draft data or refresh lists.</description>
+                <description>Action executed when the modal is fully closed (header Close, dock tab Close, Escape key, overlay click if enabled, or Is open set to false). Use this to clear draft data or refresh lists.</description>
             </property>
             <property key="onMinimize" type="action" required="false">
                 <caption>On minimize</caption>

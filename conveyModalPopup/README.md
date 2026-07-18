@@ -21,6 +21,9 @@ Dockable side modal for Mendix web apps. Opens on the **left** or **right**, min
 - Open via **Trigger** dropzone and/or a Boolean **Is open** attribute (two-way)
 - Shared dock across multiple widget instances on the same page
 - Content stays mounted while minimized (form state preserved)
+- **Escape** closes the topmost open modal
+- Focus moves into the panel on open, is trapped inside while the overlay is shown, and returns to the trigger on close
+- Dragged panel is re-clamped on window resize so it never ends up off-screen
 - Full **Appearance** configuration: borders, colors, radius, overlay, shadows
 
 ---
@@ -38,7 +41,7 @@ Transitions:
 1. Closed → Maximized — click Trigger, or set **Is open** = true  
 2. Maximized → Minimized — click Minimize (−) in the header  
 3. Minimized → Maximized — click Maximize on the dock tab  
-4. Maximized / Minimized → Closed — click Close (×), or set **Is open** = false  
+4. Maximized / Minimized → Closed — click Close (×), press **Escape** (topmost modal only), or set **Is open** = false  
 
 ---
 
@@ -167,7 +170,7 @@ All of these appear in the widget properties pane in Studio Pro. Descriptions be
 | Property | Type | When it runs |
 |----------|------|--------------|
 | **On open** | Action | Modal opens from **closed** (trigger or Is open = true). Not on restore from minimized. |
-| **On close** | Action | Modal fully closed (header/dock Close, overlay click if enabled, or Is open = false). |
+| **On close** | Action | Modal fully closed (header/dock Close, Escape key, overlay click if enabled, or Is open = false). |
 | **On minimize** | Action | User clicks Minimize (−). Content stays mounted. |
 | **On maximize** | Action | User restores from a dock tab. Not on initial open. |
 

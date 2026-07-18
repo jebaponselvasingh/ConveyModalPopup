@@ -1,9 +1,11 @@
 import {
     CSSProperties,
+    KeyboardEvent as ReactKeyboardEvent,
     PointerEvent as ReactPointerEvent,
     ReactElement,
     ReactNode,
     useCallback,
+    useEffect,
     useRef,
     useState
 } from "react";
@@ -50,20 +52,33 @@ export interface ModalPanelProps {
 const HEADER_CLAMP_PX = 40;
 const HEADER_HEIGHT_FALLBACK_PX = 44;
 
-type DragSession = {
-    pointerId: number;
-    startX: number;
-    startY: number;
-    originX: number;
-    originY: number;
+const FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
+
+type ClampBounds = {
     homeLeft: number;
     homeTop: number;
     panelWidth: number;
     headerHeight: number;
 };
 
-function clampOffset(next: DragOffset, session: DragSession): DragOffset {
-    const { homeLeft, homeTop, panelWidth, headerHeight } = session;
+type DragSession = ClampBounds & {
+    pointerId: number;
+    startX: number;
+    startY: number;
+    originX: number;
+    originY: number;
+};
+
+function restorePreviousFocus(ref: { current: HTMLElement | null }): void {
+    const previous = ref.current;
+    ref.current = null;
+    if (previous && document.contains(previous)) {
+        previous.focus({ preventScroll: true });
+    }
+}
+
+function clampOffset(next: DragOffset, bounds: ClampBounds): DragOffset {
+    const { homeLeft, homeTop, panelWidth, headerHeight } = bounds;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
 
@@ -104,7 +119,97 @@ export function ModalPanel({
 }: ModalPanelProps): ReactElement | null {
     const panelRef = useRef<HTMLElement | null>(null);
     const dragStartRef = useRef<DragSession | null>(null);
+    const dragOffsetRef = useRef(dragOffset);
+    const previouslyFocusedRef = useRef<HTMLElement | null>(null);
     const [isDragging, setIsDragging] = useState(false);
+
+    useEffect(() => {
+        dragOffsetRef.current = dragOffset;
+    }, [dragOffset]);
+
+    // Move focus into the dialog when it becomes visible; return it to the
+    // previously focused element (usually the trigger) when hidden or minimized.
+    useEffect(() => {
+        const panel = panelRef.current;
+        if (visible && panel) {
+            previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
+            panel.focus({ preventScroll: true });
+        } else if (!visible) {
+            restorePreviousFocus(previouslyFocusedRef);
+        }
+    }, [visible]);
+
+    // Restore focus when the panel unmounts entirely (modal closed).
+    useEffect(() => {
+        return () => {
+            restorePreviousFocus(previouslyFocusedRef);
+        };
+    }, []);
+
+    // Re-clamp the drag offset when the viewport shrinks so the panel
+    // cannot end up stranded off-screen after a resize or rotation.
+    useEffect(() => {
+        if (!visible || !enableDrag) {
+            return;
+        }
+        const handleResize = (): void => {
+            const panel = panelRef.current;
+            const offset = dragOffsetRef.current;
+            if (!panel || (offset.x === 0 && offset.y === 0)) {
+                return;
+            }
+            const rect = panel.getBoundingClientRect();
+            const header = panel.querySelector(".convey-modal-panel__header");
+            const headerHeight = header?.getBoundingClientRect().height || HEADER_HEIGHT_FALLBACK_PX;
+            const clamped = clampOffset(offset, {
+                homeLeft: rect.left - offset.x,
+                homeTop: rect.top - offset.y,
+                panelWidth: rect.width,
+                headerHeight
+            });
+            if (clamped.x !== offset.x || clamped.y !== offset.y) {
+                onDragOffsetChange(clamped);
+            }
+        };
+        window.addEventListener("resize", handleResize);
+        return () => {
+            window.removeEventListener("resize", handleResize);
+        };
+    }, [enableDrag, onDragOffsetChange, visible]);
+
+    // Trap Tab focus inside the panel while it behaves as a true modal
+    // (overlay shown). Without the overlay the page stays interactive by design.
+    const handlePanelKeyDown = useCallback(
+        (event: ReactKeyboardEvent<HTMLElement>) => {
+            if (event.key !== "Tab" || !showOverlay) {
+                return;
+            }
+            const panel = panelRef.current;
+            if (!panel) {
+                return;
+            }
+            const focusables = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
+                element => element.offsetParent !== null
+            );
+            if (focusables.length === 0) {
+                event.preventDefault();
+                return;
+            }
+            const first = focusables[0];
+            const last = focusables[focusables.length - 1];
+            const active = document.activeElement;
+            if (event.shiftKey) {
+                if (active === first || active === panel) {
+                    event.preventDefault();
+                    last.focus();
+                }
+            } else if (active === last) {
+                event.preventDefault();
+                first.focus();
+            }
+        },
+        [showOverlay]
+    );
 
     const handleHeaderPointerDown = useCallback(
         (event: ReactPointerEvent<HTMLElement>) => {
@@ -248,8 +353,10 @@ export function ModalPanel({
                 }`}
                 style={panelStyle}
                 role="dialog"
-                aria-modal="true"
+                aria-modal={showOverlay}
                 aria-label={title}
+                tabIndex={-1}
+                onKeyDown={handlePanelKeyDown}
             >
                 <header
                     className={`convey-modal-panel__header${
