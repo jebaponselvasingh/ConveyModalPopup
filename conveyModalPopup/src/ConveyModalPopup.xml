@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<widget id="indium.conveymodalpopup.ConveyModalPopup" pluginWidget="true" needsEntityContext="false" offlineCapable="true"
+        supportedPlatform="Web"
+        xmlns="http://www.mendix.com/widget/1.0/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.mendix.com/widget/1.0/ ../node_modules/mendix/custom_widget.xsd">
+    <name>Convey Modal Popup</name>
+    <description>Dockable side modal that maximizes left/right and minimizes to a shared bottom tab bar</description>
+    <icon/>
+    <properties>
+        <propertyGroup caption="General">
+            <property key="title" type="textTemplate" required="false">
+                <caption>Title</caption>
+                <description>Shown in the panel header and the minimized dock tab</description>
+            </property>
+            <property key="trigger" type="widgets" required="false">
+                <caption>Trigger</caption>
+                <description>Clickable content that opens the modal</description>
+            </property>
+            <property key="content" type="widgets" required="false">
+                <caption>Content</caption>
+                <description>Widgets shown inside the maximized panel body</description>
+            </property>
+            <property key="isOpen" type="attribute" required="false">
+                <caption>Is open</caption>
+                <description>Optional boolean attribute to open/close the modal from microflows or nanoflows</description>
+                <attributeTypes>
+                    <attributeType name="Boolean"/>
+                </attributeTypes>
+            </property>
+        </propertyGroup>
+        <propertyGroup caption="Layout">
+            <property key="dockPosition" type="enumeration" defaultValue="right">
+                <caption>Dock position</caption>
+                <description>Side of the screen where the maximized panel opens</description>
+                <enumerationValues>
+                    <enumerationValue key="right">Right</enumerationValue>
+                    <enumerationValue key="left">Left</enumerationValue>
+                </enumerationValues>
+            </property>
+            <property key="width" type="string" required="true" defaultValue="480px">
+                <caption>Width</caption>
+                <description>CSS width of the maximized panel (e.g. 480px or 40%)</description>
+            </property>
+            <property key="height" type="string" required="true" defaultValue="100%">
+                <caption>Height</caption>
+                <description>CSS height of the maximized panel (e.g. 100% or 90vh)</description>
+            </property>
+            <property key="topOffset" type="string" required="false" defaultValue="0">
+                <caption>Top offset</caption>
+                <description>CSS top offset for the maximized panel (e.g. 0 or 64px)</description>
+            </property>
+            <property key="zIndex" type="integer" defaultValue="1000">
+                <caption>Z-index</caption>
+                <description>Stacking order of the panel and overlay</description>
+            </property>
+        </propertyGroup>
+        <propertyGroup caption="Appearance">
+            <property key="tabColor" type="string" required="false" defaultValue="#cfe8ff">
+                <caption>Tab color</caption>
+                <description>Background color of the minimized dock tab (hex or CSS color)</description>
+            </property>
+            <property key="iconClass" type="string" required="false">
+                <caption>Icon class</caption>
+                <description>Optional CSS class for the tab/header icon (e.g. glyphicon glyphicon-file)</description>
+            </property>
+            <property key="showOverlay" type="boolean" defaultValue="true">
+                <caption>Show overlay</caption>
+                <description>Dim the page behind the maximized panel</description>
+            </property>
+            <property key="closeOnOverlayClick" type="boolean" defaultValue="false">
+                <caption>Close on overlay click</caption>
+                <description>Close the modal when the dimmed overlay is clicked</description>
+            </property>
+        </propertyGroup>
+        <propertyGroup caption="Events">
+            <property key="onOpen" type="action" required="false">
+                <caption>On open</caption>
+                <description>Action executed when the modal opens</description>
+            </property>
+            <property key="onClose" type="action" required="false">
+                <caption>On close</caption>
+                <description>Action executed when the modal closes</description>
+            </property>
+            <property key="onMinimize" type="action" required="false">
+                <caption>On minimize</caption>
+                <description>Action executed when the modal is minimized to the dock</description>
+            </property>
+            <property key="onMaximize" type="action" required="false">
+                <caption>On maximize</caption>
+                <description>Action executed when the modal is restored from the dock</description>
+            </property>
+        </propertyGroup>
+    </properties>
+</widget>
