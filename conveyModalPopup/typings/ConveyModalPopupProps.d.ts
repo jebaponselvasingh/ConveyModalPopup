@@ -3,7 +3,7 @@
  * WARNING: All changes made to this file will be overwritten
  * @author Mendix Widgets Framework Team
  */
-import { ActionValue, DynamicValue, EditableValue } from "mendix";
+import { ActionValue, DynamicValue, EditableValue, ObjectItem } from "mendix";
 import { ComponentType, CSSProperties, ReactNode } from "react";
 
 export type DockPositionEnum = "right" | "left";
@@ -15,6 +15,7 @@ export interface ConveyModalPopupContainerProps {
     tabIndex?: number;
     title?: DynamicValue<string>;
     trigger?: ReactNode;
+    datasource?: DynamicValue<ObjectItem>;
     content?: ReactNode;
     isOpen?: EditableValue<boolean>;
     dockPosition: DockPositionEnum;
@@ -22,6 +23,7 @@ export interface ConveyModalPopupContainerProps {
     height: string;
     topOffset: string;
     zIndex: number;
+    enableDrag: boolean;
     iconClass: string;
     showOverlay: boolean;
     closeOnOverlayClick: boolean;
@@ -60,6 +62,7 @@ export interface ConveyModalPopupPreviewProps {
     translate: (text: string) => string;
     title: string;
     trigger: { widgetCount: number; renderer: ComponentType<{ children: ReactNode; caption?: string }> };
+    datasource: {} | { caption: string } | { type: string } | null;
     content: { widgetCount: number; renderer: ComponentType<{ children: ReactNode; caption?: string }> };
     isOpen: string;
     dockPosition: DockPositionEnum;
@@ -67,6 +70,7 @@ export interface ConveyModalPopupPreviewProps {
     height: string;
     topOffset: string;
     zIndex: number | null;
+    enableDrag: boolean;
     iconClass: string;
     showOverlay: boolean;
     closeOnOverlayClick: boolean;

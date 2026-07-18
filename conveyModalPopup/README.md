@@ -12,10 +12,12 @@ Dockable side modal for Mendix web apps. Opens on the **left** or **right**, min
 ## Features
 
 - Side panel docked **left** or **right** with configurable width, height, and top offset
+- **Drag** the maximized panel by its header to any screen position (optional; on by default)
 - **Minimize** to a pastel pill tab in a shared bottom dock
 - **Maximize** from the dock tab to restore the panel
 - **Close** from the panel header or the dock tab
-- Nested **Content** dropzone for any Mendix widgets (forms, data views, etc.)
+- Nested **Content** dropzone for any Mendix widgets
+- Optional **Data source** (single object) so Content widgets get Data view–like object context
 - Open via **Trigger** dropzone and/or a Boolean **Is open** attribute (two-way)
 - Shared dock across multiple widget instances on the same page
 - Content stays mounted while minimized (form state preserved)
@@ -27,9 +29,9 @@ Dockable side modal for Mendix web apps. Opens on the **left** or **right**, min
 
 | State | Behavior |
 |-------|----------|
-| **Closed** | Panel and dock tab are hidden |
-| **Maximized** | Side panel visible; optional page overlay |
-| **Minimized** | Panel hidden; pastel tab visible in the shared bottom dock |
+| **Closed** | Panel and dock tab are hidden; drag offset resets |
+| **Maximized** | Side panel visible; optional page overlay; header can be dragged |
+| **Minimized** | Panel hidden; pastel tab visible in the shared bottom dock; drag offset kept |
 
 Transitions:
 
@@ -56,18 +58,48 @@ npm run build
 
 Output: `dist/1.0.0/indium.ConveyModalPopup.mpk`
 
+**Note:** Object Data source requires **Mendix 11.11+**.
+
 ---
 
 ## Quick start (Studio Pro)
 
-1. Place **Convey Modal Popup** on a page (inside a Data view if you use **Is open**).
+1. Place **Convey Modal Popup** on a page (inside a Data view if you use **Is open** or Context data source).
 2. Set **Title** (e.g. `Address Change`).
 3. Drop an Action Button or Icon into **Trigger**.
-4. Drop your form / content into **Content**.
-5. Optionally bind **Is open** to a Boolean attribute.
-6. Under **Layout**, set **Dock position**, **Width**, **Height**.
-7. Under **Appearance**, set **Tab background** (pastel) so each modal is easy to tell apart when minimized.
-8. Run the app: click the trigger → panel opens → Minimize → dock tab appears → Maximize restores.
+4. Optionally set **Data source** to the object to edit (Context / Microflow / Nanoflow / Listen to widget).
+5. Drop Text boxes and other widgets into **Content**, binding attributes of that object.
+6. Optionally bind **Is open** to a Boolean attribute.
+7. Under **Layout**, set **Dock position**, **Width**, **Height**, and leave **Enable drag** on if users should move the panel.
+8. Under **Appearance**, set **Tab background** (pastel) so each modal is easy to tell apart when minimized.
+9. Run the app: open → drag by header → Minimize → dock tab → Maximize restores position → Close resets position.
+
+---
+
+## Content like a Data view
+
+Use **Data source** when Content widgets should bind directly to one object (same idea as a Data view):
+
+1. Set **Data source** to Context (page/object), Microflow, Nanoflow, or Listen to widget.
+2. Drop widgets into **Content** and select attributes of that entity.
+3. Leave **Data source** empty if you only need layout widgets, or if you nest your own Data view inside Content.
+
+While the modal is minimized, Content stays mounted so typed values are not lost.
+
+---
+
+## Enable drag
+
+| Behavior | Detail |
+|----------|--------|
+| Handle | Panel **header** only (title area). Body remains interactive for forms. |
+| Property | **Enable drag** (default Yes). Set No to keep the panel fixed to Dock position. |
+| Position | Dock left/right is the home position; drag applies a pixel offset via CSS transform. |
+| Minimize | Drag offset is **kept** when minimizing and restoring. |
+| Close | Drag offset **resets** to home (docked) position. |
+| Limits | Panel is clamped so ~40px of the header stays on-screen. |
+
+Minimize (−) and Close (×) buttons never start a drag.
 
 ---
 
@@ -81,18 +113,20 @@ All of these appear in the widget properties pane in Studio Pro. Descriptions be
 |----------|------|----------|---------|-------------|
 | **Title** | Text template | No | — | Shown in the panel header and on the minimized dock tab. Supports expressions (e.g. `$Request/Name`). |
 | **Trigger** | Widgets | No | — | Clickable area that opens the modal. Use an Action Button, Icon, or Image. Configure Trigger, Is open, or both. |
-| **Content** | Widgets | No | — | Body of the maximized panel. Stays mounted while minimized so values are preserved until close. |
+| **Data source** | Object datasource | No | — | Optional single object context for Content (like a Data view). Context / Microflow / Nanoflow / Listen to widget. Mendix 11.11+. |
+| **Content** | Widgets | No | — | Body of the maximized panel. Linked to Data source when set. Stays mounted while minimized. |
 | **Is open** | Boolean attribute | No | — | Two-way open/close from microflows/nanoflows. `true` = open maximized; `false` = close and remove dock tab. Widget writes to this attribute on user open/close. Requires entity context (e.g. Data view). |
 
 ### Layout
 
 | Property | Type | Required | Default | Explanation |
 |----------|------|----------|---------|-------------|
-| **Dock position** | Enumeration | Yes | `Right` | Side of the viewport: **Right** or **Left**. |
+| **Dock position** | Enumeration | Yes | `Right` | Home side of the viewport: **Right** or **Left**. |
 | **Width** | String | Yes | `480px` | CSS width. Examples: `480px`, `40%`, `30vw`. |
 | **Height** | String | Yes | `100%` | CSS height. Examples: `100%`, `90vh`, `800px`. |
 | **Top offset** | String | No | `0` | CSS `top`. Use e.g. `64px` to clear a top nav bar. |
 | **Z-index** | Integer | No | `1000` | Overlay uses this value; panel uses Z-index + 1. Shared dock is fixed at **1100**. Keep panel Z-index below 1100 if dock tabs must stay above the panel. |
+| **Enable drag** | Boolean | No | `Yes` | Drag maximized panel by header. Position kept while minimized; resets on close. |
 
 ### Appearance — overlay & panel colors
 
@@ -206,9 +240,11 @@ src/
 ## Limitations (v1)
 
 - Web only (not native mobile)
-- No drag-resize of the panel
-- Minimize state is not persisted across page navigation
+- No drag-resize of the panel (size still from Width/Height)
+- Drag position is not persisted across page navigation
+- Object Data source requires Mendix 11.11+
 - Shared dock Z-index is fixed at 1100
+- Object Data source is a single object (not a repeating list)
 
 ---
 

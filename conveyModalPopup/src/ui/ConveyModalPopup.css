@@ -48,6 +48,47 @@
     flex-shrink: 0;
     min-height: 44px;
     box-sizing: border-box;
+    touch-action: none;
+}
+
+.convey-modal-panel__header--draggable {
+    user-select: none;
+}
+
+.convey-modal-panel--dragging {
+    will-change: transform;
+}
+
+.convey-modal-panel__placeholder {
+    padding: 24px 8px;
+    text-align: center;
+    color: #64748b;
+    font-size: 13px;
+}
+
+.convey-modal-panel__content-wrap {
+    position: relative;
+    min-height: 48px;
+}
+
+.convey-modal-panel__content--loading {
+    opacity: 0.45;
+    pointer-events: none;
+}
+
+.convey-modal-panel__content--empty {
+    display: none;
+}
+
+.convey-modal-panel__placeholder--overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    background: rgba(255, 255, 255, 0.72);
+    z-index: 1;
 }
 
 .convey-modal-panel__title-wrap {

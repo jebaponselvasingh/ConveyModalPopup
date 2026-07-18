@@ -1,7 +1,17 @@
-import { KeyboardEvent, MouseEvent, ReactElement, useCallback, useEffect, useId, useRef, useState } from "react";
-import { ActionValue, DynamicValue, EditableValue } from "mendix";
+import {
+    KeyboardEvent,
+    MouseEvent,
+    ReactElement,
+    ReactNode,
+    useCallback,
+    useEffect,
+    useId,
+    useRef,
+    useState
+} from "react";
+import { ActionValue, DynamicValue, EditableValue, ValueStatus } from "mendix";
 import classNames from "classnames";
-import { ModalPanel } from "./components/ModalPanel";
+import { DragOffset, ModalPanel } from "./components/ModalPanel";
 import { SharedDockBar } from "./components/SharedDockBar";
 import { dockRegistry } from "./utils/dockRegistry";
 import { ConveyModalPopupContainerProps } from "../typings/ConveyModalPopupProps";
@@ -9,6 +19,8 @@ import { ConveyModalPopupContainerProps } from "../typings/ConveyModalPopupProps
 import "./ui/ConveyModalPopup.css";
 
 type ModalUiState = "closed" | "maximized" | "minimized";
+
+const ZERO_OFFSET: DragOffset = { x: 0, y: 0 };
 
 function readText(value?: DynamicValue<string>, fallback = ""): string {
     if (!value || value.status !== "available" || value.value == null) {
@@ -34,6 +46,42 @@ function setOpenAttribute(isOpen: EditableValue<boolean> | undefined, next: bool
     }
 }
 
+function renderContent(content: ReactNode | undefined, datasource: DynamicValue<unknown> | undefined): ReactNode {
+    if (!datasource) {
+        return content;
+    }
+
+    const isLoading = datasource.status === ValueStatus.Loading;
+    const isEmpty =
+        datasource.status === ValueStatus.Unavailable ||
+        (datasource.status === ValueStatus.Available && datasource.value == null);
+
+    // Keep Content mounted across Loading so form state is not wiped on refresh.
+    return (
+        <div className="convey-modal-panel__content-wrap">
+            <div
+                className={classNames("convey-modal-panel__content", {
+                    "convey-modal-panel__content--loading": isLoading,
+                    "convey-modal-panel__content--empty": isEmpty && !isLoading
+                })}
+                aria-hidden={isEmpty && !isLoading}
+            >
+                {content}
+            </div>
+            {isLoading ? (
+                <div className="convey-modal-panel__placeholder convey-modal-panel__placeholder--overlay" role="status">
+                    Loading…
+                </div>
+            ) : null}
+            {isEmpty && !isLoading ? (
+                <div className="convey-modal-panel__placeholder" role="status">
+                    No data available
+                </div>
+            ) : null}
+        </div>
+    );
+}
+
 export function ConveyModalPopup(props: ConveyModalPopupContainerProps): ReactElement {
     const {
         class: className,
@@ -41,6 +89,7 @@ export function ConveyModalPopup(props: ConveyModalPopupContainerProps): ReactEl
         tabIndex,
         title,
         trigger,
+        datasource,
         content,
         isOpen,
         dockPosition,
@@ -48,6 +97,7 @@ export function ConveyModalPopup(props: ConveyModalPopupContainerProps): ReactEl
         height,
         topOffset,
         zIndex,
+        enableDrag,
         iconClass,
         showOverlay,
         closeOnOverlayClick,
@@ -75,6 +125,7 @@ export function ConveyModalPopup(props: ConveyModalPopupContainerProps): ReactEl
 
     const instanceId = useId();
     const [uiState, setUiState] = useState<ModalUiState>(() => (isOpen?.value === true ? "maximized" : "closed"));
+    const [dragOffset, setDragOffset] = useState<DragOffset>(ZERO_OFFSET);
     const uiStateRef = useRef(uiState);
     const skipAttributeSyncRef = useRef(false);
     const callbacksRef = useRef({
@@ -136,6 +187,7 @@ export function ConveyModalPopup(props: ConveyModalPopupContainerProps): ReactEl
 
     const close = useCallback(() => {
         setUiState("closed");
+        setDragOffset(ZERO_OFFSET);
         skipAttributeSyncRef.current = true;
         setOpenAttribute(callbacksRef.current.isOpen, false);
         executeAction(callbacksRef.current.onClose);
@@ -216,6 +268,7 @@ export function ConveyModalPopup(props: ConveyModalPopupContainerProps): ReactEl
             executeAction(onOpen);
         } else if (!open && uiStateRef.current !== "closed") {
             setUiState("closed");
+            setDragOffset(ZERO_OFFSET);
             dockRegistry.unregister(instanceId);
             executeAction(onClose);
         }
@@ -249,6 +302,8 @@ export function ConveyModalPopup(props: ConveyModalPopupContainerProps): ReactEl
         [openMaximized]
     );
 
+    const panelContent = renderContent(content, datasource);
+
     return (
         <div className={classNames("convey-modal-popup", className)} style={style} tabIndex={tabIndex}>
             {trigger ? (
@@ -276,10 +331,13 @@ export function ConveyModalPopup(props: ConveyModalPopupContainerProps): ReactEl
                     closeOnOverlayClick={closeOnOverlayClick}
                     appearance={appearance}
                     visible={uiState === "maximized"}
+                    enableDrag={enableDrag}
+                    dragOffset={dragOffset}
+                    onDragOffsetChange={setDragOffset}
                     onMinimize={minimize}
                     onClose={close}
                 >
-                    {content}
+                    {panelContent}
                 </ModalPanel>
             )}
 

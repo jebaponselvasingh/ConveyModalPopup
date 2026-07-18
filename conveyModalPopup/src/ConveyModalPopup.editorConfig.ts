@@ -137,6 +137,7 @@ export function check(values: ConveyModalPopupPreviewProps): Problem[] {
 
 export function getPreview(values: ConveyModalPopupPreviewProps, _isDarkMode: boolean): PreviewProps {
     const title = typeof values.title === "string" && values.title.trim() ? values.title : "Convey Modal Popup";
+    const dragHint = values.enableDrag === false ? "drag off" : "draggable header";
 
     return {
         type: "Container",
@@ -146,7 +147,7 @@ export function getPreview(values: ConveyModalPopupPreviewProps, _isDarkMode: bo
         children: [
             {
                 type: "Text",
-                content: `${title} (${values.dockPosition || "right"})`,
+                content: `${title} (${values.dockPosition || "right"}, ${dragHint})`,
                 bold: true,
                 fontSize: 12
             },
@@ -156,9 +157,13 @@ export function getPreview(values: ConveyModalPopupPreviewProps, _isDarkMode: bo
                 placeholder: "Trigger (click to open)"
             },
             {
-                type: "DropZone",
-                property: values.content,
-                placeholder: "Modal content"
+                type: "Datasource",
+                property: values.datasource ?? null,
+                child: {
+                    type: "DropZone",
+                    property: values.content,
+                    placeholder: "Modal content (object context when Data source is set)"
+                }
             },
             {
                 type: "Text",
