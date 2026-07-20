@@ -16,13 +16,9 @@
                 <caption>Trigger</caption>
                 <description>Drop zone for widgets that open the modal when clicked (for example an Action Button, Icon, or Image). Configure Trigger, Is open, or both. Nested clickable widgets inside the trigger also open the modal. If the trigger contains its own button or link, the wrapper does not add an extra keyboard role, so accessibility stays correct. Leave empty when opening is driven only by the Is open attribute from a microflow or nanoflow.</description>
             </property>
-            <property key="datasource" type="datasource" isList="false" required="false">
-                <caption>Data source</caption>
-                <description>Optional single object that provides context to Content widgets, similar to a Data view. Configure Context, Microflow, Nanoflow, or Listen to widget. Leave empty if Content widgets use page context or their own nested Data views. This is a single-object source (not a list). Requires Mendix 11.11+. While the data source is loading, Content stays mounted and a loading placeholder is shown so form values are not wiped by a brief refresh.</description>
-            </property>
-            <property key="content" type="widgets" required="false" dataSource="datasource">
+            <property key="content" type="widgets" required="false">
                 <caption>Content</caption>
-                <description>Drop zone for the panel body. Place Text boxes, buttons, or any page widgets here. When Data source is set, nested widgets receive that object context (like inside a Data view) and can bind its attributes. Content stays mounted while the modal is minimized so typed values are preserved until the modal is fully closed. In design mode, drop, paste, or move widgets into this zone the same way as a Container.</description>
+                <description>Drop zone for the panel body. Place Text boxes, buttons, or any page widgets here. To give Content an object context, place this widget inside a Data view (or nest a Data view inside Content): nested widgets then bind that object's attributes exactly as in a Data view. Content stays mounted while the modal is minimized so typed values are preserved until the modal is fully closed. In design mode, drop, paste, or move widgets into this zone the same way as a Container.</description>
             </property>
             <property key="isOpen" type="attribute" required="false">
                 <caption>Is open</caption>

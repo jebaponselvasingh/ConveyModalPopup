@@ -1,15 +1,15 @@
 import {
+    createElement,
     KeyboardEvent as ReactKeyboardEvent,
     MouseEvent,
     ReactElement,
-    ReactNode,
     useCallback,
     useEffect,
     useId,
     useRef,
     useState
 } from "react";
-import { ActionValue, DynamicValue, EditableValue, ValueStatus } from "mendix";
+import { ActionValue, DynamicValue, EditableValue } from "mendix";
 import classNames from "classnames";
 import { DragOffset, ModalPanel, MultiOpenBehavior } from "./components/ModalPanel";
 import { SharedDockBar } from "./components/SharedDockBar";
@@ -52,42 +52,6 @@ function setOpenAttribute(isOpen: EditableValue<boolean> | undefined, next: bool
 
 const INTERACTIVE_SELECTOR = "button, a[href], input, select, textarea, [tabindex]";
 
-function renderContent(content: ReactNode | undefined, datasource: DynamicValue<unknown> | undefined): ReactNode {
-    if (!datasource) {
-        return content;
-    }
-
-    const isLoading = datasource.status === ValueStatus.Loading;
-    const isEmpty =
-        datasource.status === ValueStatus.Unavailable ||
-        (datasource.status === ValueStatus.Available && datasource.value == null);
-
-    // Keep Content mounted across Loading so form state is not wiped on refresh.
-    return (
-        <div className="convey-modal-panel__content-wrap">
-            <div
-                className={classNames("convey-modal-panel__content", {
-                    "convey-modal-panel__content--loading": isLoading,
-                    "convey-modal-panel__content--empty": isEmpty && !isLoading
-                })}
-                aria-hidden={isEmpty && !isLoading}
-            >
-                {content}
-            </div>
-            {isLoading ? (
-                <div className="convey-modal-panel__placeholder convey-modal-panel__placeholder--overlay" role="status">
-                    Loading…
-                </div>
-            ) : null}
-            {isEmpty && !isLoading ? (
-                <div className="convey-modal-panel__placeholder" role="status">
-                    No data available
-                </div>
-            ) : null}
-        </div>
-    );
-}
-
 function resolveMultiOpenBehavior(value: string | undefined): MultiOpenBehavior {
     return value === "overlap" ? "overlap" : "beside";
 }
@@ -100,7 +64,6 @@ export function ConveyModalPopup(props: ConveyModalPopupContainerProps): ReactEl
         tabIndex,
         title,
         trigger,
-        datasource,
         content,
         isOpen,
         dockPosition,
@@ -409,8 +372,6 @@ export function ConveyModalPopup(props: ConveyModalPopupContainerProps): ReactEl
         [openMaximized]
     );
 
-    const panelContent = renderContent(content, datasource);
-
     return (
         <div className={classNames("convey-modal-popup", className)} style={style} tabIndex={tabIndex}>
             {trigger ? (
@@ -447,7 +408,7 @@ export function ConveyModalPopup(props: ConveyModalPopupContainerProps): ReactEl
                     onMinimize={minimize}
                     onClose={close}
                 >
-                    {panelContent}
+                    {content}
                 </ModalPanel>
             )}
 

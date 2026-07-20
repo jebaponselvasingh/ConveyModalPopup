@@ -17,7 +17,7 @@ Dockable side modal for Mendix web apps. Opens on the **left** or **right**, min
 - **Maximize** from the dock tab to restore the panel
 - **Close** from the panel header or the dock tab
 - Nested **Content** dropzone for any Mendix widgets
-- Optional **Data source** (single object) so Content widgets get Data view–like object context
+- Object context for Content: wrap the widget in a **Data view** (or nest one inside Content) and bind attributes as usual
 - Open via **Trigger** dropzone and/or a Boolean **Is open** attribute (two-way)
 - Shared dock across multiple widget instances on the same page
 - **When multiple open**: stack beside each other on the same dock side (default), or overlap
@@ -63,21 +63,20 @@ npm run build
 
 Output: `dist/1.0.0/indium.ConveyModalPopup.mpk`
 
-**Note:** Object Data source requires **Mendix 11.11+**.
+**Note:** Compatible with **Mendix 10.24+** (no object data source property is used, so the widget loads on Studio Pro versions before 11.11).
 
 ---
 
 ## Quick start (Studio Pro)
 
-1. Place **Convey Modal Popup** on a page (inside a Data view if you use **Is open** or Context data source).
+1. Place **Convey Modal Popup** on a page — inside a **Data view** when Content widgets or **Is open** need an object context.
 2. Set **Title** (e.g. `Address Change`).
 3. Drop an Action Button or Icon into **Trigger**.
-4. Optionally set **Data source** to the object to edit (Context / Microflow / Nanoflow / Listen to widget).
-5. Drop Text boxes and other widgets into **Content**, binding attributes of that object.
-6. Optionally bind **Is open** to a Boolean attribute.
-7. Under **Layout**, set **Dock position**, **Width**, **Height**, **When multiple open** (Open beside by default), and leave **Enable drag** on if users should move the panel.
-8. Under **Appearance**, set **Tab background** (pastel) so each modal is easy to tell apart when minimized.
-9. Run the app: open → drag by header → Minimize → dock tab → Maximize restores position → Close resets position.
+4. Drop Text boxes and other widgets into **Content**; they bind attributes of the surrounding Data view object (or nest a Data view inside Content for a microflow/nanoflow source).
+5. Optionally bind **Is open** to a Boolean attribute.
+6. Under **Layout**, set **Dock position**, **Width**, **Height**, **When multiple open** (Open beside by default), and leave **Enable drag** on if users should move the panel.
+7. Under **Appearance**, set **Tab background** (pastel) so each modal is easy to tell apart when minimized.
+8. Run the app: open → drag by header → Minimize → dock tab → Maximize restores position → Close resets position.
 
 ---
 
@@ -115,11 +114,11 @@ If the surrounding Data view replaces its object, Mendix may still remount **Con
 
 ## Content like a Data view
 
-Use **Data source** when Content widgets should bind directly to one object (same idea as a Data view):
+Content widgets get their object context the standard Mendix 10 way:
 
-1. Set **Data source** to Context (page/object), Microflow, Nanoflow, or Listen to widget.
-2. Drop widgets into **Content** and select attributes of that entity.
-3. Leave **Data source** empty if you only need layout widgets, or if you nest your own Data view inside Content.
+1. **Context object** — place the whole widget inside a Data view (or use a page parameter context). Widgets dropped into **Content** inherit that object and can bind its attributes directly.
+2. **Microflow / Nanoflow / Listen to widget** — nest a Data view *inside* Content and give that Data view the desired data source.
+3. Only layout widgets? No wrapping needed — Content works without any object context.
 
 While the modal is minimized, Content stays mounted so typed values are not lost.
 
@@ -150,8 +149,7 @@ All of these appear in the widget properties pane in Studio Pro. Descriptions be
 |----------|------|----------|---------|-------------|
 | **Title** | Text template | No | — | Shown in the maximized panel header and on the minimized dock tab. Supports static text, expressions, and attributes (e.g. `$Request/Name`). Empty → runtime fallback **Modal**. Keep titles short so dock tabs stay readable. |
 | **Trigger** | Widgets | No | — | Dropzone that opens the modal on click (Action Button, Icon, Image, etc.). Nested clickables also open it. If the dropzone already contains a button/link, the wrapper does not add an extra keyboard role. Leave empty when open/close is only via **Is open**. Configure Trigger, Is open, or both. |
-| **Data source** | Object datasource | No | — | Optional **single** object context for Content (like a Data view): Context / Microflow / Nanoflow / Listen to widget. Leave empty if Content uses page context or a nested Data view. Mendix **11.11+**. While loading, Content stays mounted with a loading placeholder so a brief refresh does not wipe form state. |
-| **Content** | Widgets | No | — | Panel body dropzone. When Data source is set, nested widgets bind that object’s attributes. Stays mounted while minimized until the modal is fully closed. Supports drop / paste / move in design mode like a Container. |
+| **Content** | Widgets | No | — | Panel body dropzone. Inherits the surrounding object context (e.g. an enclosing Data view), so nested widgets can bind that object’s attributes. Stays mounted while minimized until the modal is fully closed. Supports drop / paste / move in design mode like a Container. |
 | **Is open** | Boolean attribute | No | — | Two-way open/close for microflows/nanoflows. `true` = open maximized; `false` = close and remove dock tab. The widget also writes this attribute on user open/close (header/dock Close, Escape, overlay click if enabled). Requires entity context (e.g. Data view). Prefer a **stable** helper object (page parameter / committed NPE) not recreated on every field change. After a short remount, the widget restores open/minimized state and may re-assert `true` if the new object still has `false`. |
 
 ### Layout
@@ -285,9 +283,8 @@ src/
 - Web only (not native mobile)
 - No drag-resize of the panel (size still from Width/Height)
 - Drag position is not persisted across page navigation
-- Object Data source requires Mendix 11.11+
+- No built-in data source property (Mendix 10.x compatibility) — use an enclosing or nested Data view for object context
 - Shared dock Z-index is fixed at 1100
-- Object Data source is a single object (not a repeating list)
 
 ---
 

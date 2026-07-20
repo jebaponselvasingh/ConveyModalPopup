@@ -1,4 +1,4 @@
-import { ReactElement, useEffect, useState } from "react";
+import { createElement, ReactElement, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { DockItem, dockRegistry } from "../utils/dockRegistry";
 import { MinimizedTab } from "./MinimizedTab";

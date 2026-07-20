@@ -1,4 +1,4 @@
-import { ReactElement } from "react";
+import { createElement, ReactElement } from "react";
 import { ConveyModalPopupPreviewProps } from "../typings/ConveyModalPopupProps";
 
 export function preview(props: ConveyModalPopupPreviewProps): ReactElement {

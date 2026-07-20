@@ -158,13 +158,9 @@ export function getPreview(values: ConveyModalPopupPreviewProps, _isDarkMode: bo
                 placeholder: "Trigger (click to open)"
             },
             {
-                type: "Datasource",
-                property: values.datasource ?? null,
-                child: {
-                    type: "DropZone",
-                    property: values.content,
-                    placeholder: "Modal content (object context when Data source is set)"
-                }
+                type: "DropZone",
+                property: values.content,
+                placeholder: "Modal content (wrap the widget in a Data view for object context)"
             },
             {
                 type: "Text",

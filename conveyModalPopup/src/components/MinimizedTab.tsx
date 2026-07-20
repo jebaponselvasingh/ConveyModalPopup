@@ -1,4 +1,4 @@
-import { CSSProperties, ReactElement } from "react";
+import { createElement, CSSProperties, ReactElement } from "react";
 import { DockItem } from "../utils/dockRegistry";
 
 export interface MinimizedTabProps {
