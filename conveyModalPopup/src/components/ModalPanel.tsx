@@ -11,9 +11,9 @@ import {
     useState
 } from "react";
 import { createPortal } from "react-dom";
-import { panelRegistry } from "../utils/panelRegistry";
+import { panelRegistry, resolveRegistrySide, type DockAlign, type DockPosition } from "../utils/panelRegistry";
 
-export type DockPosition = "left" | "right";
+export type { DockAlign, DockPosition };
 
 export type MultiOpenBehavior = "beside" | "overlap";
 
@@ -38,6 +38,7 @@ export interface ModalPanelProps {
     title: string;
     iconClass?: string;
     dockPosition: DockPosition;
+    dockAlign: DockAlign;
     multiOpenBehavior: MultiOpenBehavior;
     width: string;
     height: string;
@@ -109,6 +110,7 @@ export function ModalPanel({
     title,
     iconClass,
     dockPosition,
+    dockAlign,
     multiOpenBehavior,
     width,
     height,
@@ -147,17 +149,18 @@ export function ModalPanel({
 
         const sync = (): void => {
             const panel = panelRef.current;
-            const widthPx = panel?.getBoundingClientRect().width || 0;
-            panelRegistry.register(instanceId, dockPosition, widthPx);
-            setRegistryInsetPx(panelRegistry.getInset(instanceId, dockPosition, widthPx));
+            const sizePx = panel?.getBoundingClientRect().width || 0;
+            const side = resolveRegistrySide(dockPosition, dockAlign);
+            panelRegistry.register(instanceId, side, sizePx);
+            setRegistryInsetPx(panelRegistry.getInset(instanceId, side, sizePx));
         };
 
         // Measure after layout so % / vw widths resolve to pixels.
         const raf = requestAnimationFrame(sync);
         const unsubscribe = panelRegistry.subscribe(() => {
-            const panel = panelRef.current;
-            const widthPx = panel?.getBoundingClientRect().width || 0;
-            setRegistryInsetPx(panelRegistry.getInset(instanceId, dockPosition, widthPx));
+            const sizePx = panelRef.current?.getBoundingClientRect().width || 0;
+            const side = resolveRegistrySide(dockPosition, dockAlign);
+            setRegistryInsetPx(panelRegistry.getInset(instanceId, side, sizePx));
         });
 
         const handleResize = (): void => {
@@ -171,7 +174,7 @@ export function ModalPanel({
             window.removeEventListener("resize", handleResize);
             panelRegistry.unregister(instanceId);
         };
-    }, [dockPosition, instanceId, multiOpenBehavior, visible]);
+    }, [dockAlign, dockPosition, instanceId, multiOpenBehavior, visible]);
 
     // Move focus into the dialog when it becomes visible; return it to the
     // previously focused element (usually the trigger) when hidden or minimized.
@@ -344,9 +347,7 @@ export function ModalPanel({
     const panelStyle: CSSProperties = {
         width,
         height,
-        top: topOffset,
         zIndex: zIndex + 1,
-        [dockPosition]: insetPx,
         backgroundColor: appearance.panelBackgroundColor,
         borderColor: appearance.panelBorderColor,
         borderWidth: appearance.panelBorderWidth,
@@ -355,6 +356,17 @@ export function ModalPanel({
         transform: `translate(${dragOffset.x}px, ${dragOffset.y}px)`,
         ...(appearance.panelBoxShadow ? { boxShadow: appearance.panelBoxShadow } : {})
     };
+
+    if (dockPosition === "top") {
+        panelStyle.top = topOffset || 0;
+        panelStyle[dockAlign] = insetPx;
+    } else if (dockPosition === "bottom") {
+        panelStyle.bottom = 0;
+        panelStyle[dockAlign] = insetPx;
+    } else {
+        panelStyle.top = topOffset;
+        panelStyle[dockPosition] = insetPx;
+    }
 
     const overlayStyle: CSSProperties = {
         zIndex,

@@ -6,7 +6,9 @@
 import { ComponentType, CSSProperties, ReactNode } from "react";
 import { ActionValue, DynamicValue, EditableValue } from "mendix";
 
-export type DockPositionEnum = "right" | "left";
+export type DockPositionEnum = "top" | "bottom";
+
+export type DockAlignEnum = "right" | "left";
 
 export type MultiOpenBehaviorEnum = "beside" | "overlap";
 
@@ -20,6 +22,7 @@ export interface ConveyModalPopupContainerProps {
     content?: ReactNode;
     isOpen?: EditableValue<boolean>;
     dockPosition: DockPositionEnum;
+    dockAlign: DockAlignEnum;
     width: string;
     height: string;
     topOffset: string;
@@ -67,6 +70,7 @@ export interface ConveyModalPopupPreviewProps {
     content: { widgetCount: number; renderer: ComponentType<{ children: ReactNode; caption?: string }> };
     isOpen: string;
     dockPosition: DockPositionEnum;
+    dockAlign: DockAlignEnum;
     width: string;
     height: string;
     topOffset: string;

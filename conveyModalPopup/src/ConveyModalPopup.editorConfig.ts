@@ -148,7 +148,11 @@ export function getPreview(values: ConveyModalPopupPreviewProps, _isDarkMode: bo
         children: [
             {
                 type: "Text",
-                content: `${title} (${values.dockPosition || "right"}, ${dragHint}, ${multiHint})`,
+                content: `${title} (${values.dockPosition || "right"}${
+                    values.dockPosition === "top" || values.dockPosition === "bottom"
+                        ? `-${values.dockAlign || "right"}`
+                        : ""
+                }, ${dragHint}, ${multiHint})`,
                 bold: true,
                 fontSize: 12
             },

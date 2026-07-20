@@ -1,9 +1,13 @@
-export type PanelDockSide = "left" | "right";
+export type PanelDockSide = "left" | "right" | "top-left" | "top-right" | "bottom-left" | "bottom-right";
+
+export type DockPosition = "left" | "right" | "top" | "bottom";
+export type DockAlign = "left" | "right";
 
 export type PanelEntry = {
     id: string;
     side: PanelDockSide;
-    widthPx: number;
+    /** Pixel width used for horizontal beside-tiling. */
+    sizePx: number;
     /** Registration order — earlier panels sit closer to the dock edge. */
     order: number;
 };
@@ -27,11 +31,19 @@ function panelsOnSide(side: PanelDockSide): PanelEntry[] {
         .sort((a, b) => a.order - b.order);
 }
 
+/** Registry key for tiling: side docks use the edge; top/bottom include corner align. */
+export function resolveRegistrySide(position: DockPosition, align: DockAlign): PanelDockSide {
+    if (position === "left" || position === "right") {
+        return position;
+    }
+    return `${position}-${align}`;
+}
+
 /**
- * Sum of widths (+ gap) of panels registered before this one on the same side.
+ * Sum of widths (+ gap) of panels registered before this one on the same home.
  * Caps so at least MIN_VISIBLE_PX of the panel remains on-screen.
  */
-export function computeInset(id: string, side: PanelDockSide, ownWidthPx: number): number {
+export function computeInset(id: string, side: PanelDockSide, ownSizePx: number): number {
     const siblings = panelsOnSide(side);
     const self = panels.get(id);
     let inset = 0;
@@ -43,10 +55,10 @@ export function computeInset(id: string, side: PanelDockSide, ownWidthPx: number
         if (panel.id === id) {
             break;
         }
-        inset += panel.widthPx + GAP_PX;
+        inset += panel.sizePx + GAP_PX;
     }
 
-    if (typeof window !== "undefined" && ownWidthPx > 0) {
+    if (typeof window !== "undefined" && ownSizePx > 0) {
         const maxInset = Math.max(0, window.innerWidth - MIN_VISIBLE_PX);
         inset = Math.min(inset, maxInset);
     }
@@ -55,22 +67,22 @@ export function computeInset(id: string, side: PanelDockSide, ownWidthPx: number
 }
 
 export const panelRegistry = {
-    register(id: string, side: PanelDockSide, widthPx: number): void {
+    register(id: string, side: PanelDockSide, sizePx: number): void {
         const existing = panels.get(id);
         if (existing) {
-            panels.set(id, { ...existing, side, widthPx: widthPx || existing.widthPx });
+            panels.set(id, { ...existing, side, sizePx: sizePx || existing.sizePx });
         } else {
-            panels.set(id, { id, side, widthPx, order: nextOrder++ });
+            panels.set(id, { id, side, sizePx, order: nextOrder++ });
         }
         notify();
     },
 
-    updateWidth(id: string, widthPx: number): void {
+    updateSize(id: string, sizePx: number): void {
         const existing = panels.get(id);
-        if (!existing || existing.widthPx === widthPx || widthPx <= 0) {
+        if (!existing || existing.sizePx === sizePx || sizePx <= 0) {
             return;
         }
-        panels.set(id, { ...existing, widthPx });
+        panels.set(id, { ...existing, sizePx });
         notify();
     },
 
@@ -82,8 +94,8 @@ export const panelRegistry = {
         notify();
     },
 
-    getInset(id: string, side: PanelDockSide, ownWidthPx: number): number {
-        return computeInset(id, side, ownWidthPx);
+    getInset(id: string, side: PanelDockSide, ownSizePx: number): number {
+        return computeInset(id, side, ownSizePx);
     },
 
     subscribe(listener: Listener): () => void {

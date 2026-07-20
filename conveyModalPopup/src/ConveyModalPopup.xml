@@ -29,9 +29,17 @@
             </property>
         </propertyGroup>
         <propertyGroup caption="Layout">
-            <property key="dockPosition" type="enumeration" defaultValue="right">
+            <property key="dockPosition" type="enumeration" defaultValue="top">
                 <caption>Dock position</caption>
-                <description>Home side of the viewport where the maximized panel appears before any drag. Right docks to the right edge; Left docks to the left edge. When When multiple open is Open beside, only panels on the same side are tiled next to each other; left and right sides are arranged independently. Drag still moves the panel from this home position using a pixel offset.</description>
+                <description>Home edge of the viewport where the maximized panel appears before any drag. Right/Left dock to the side edges; Top/Bottom dock to the top or bottom edge. For Top or Bottom, use Horizontal align to pin the panel to the left or right corner of that edge. When When multiple open is Open beside, only panels on the same edge and align corner are tiled next to each other. Drag still moves the panel from this home position using a pixel offset. Top offset applies to Left, Right, and Top docks.</description>
+                <enumerationValues>
+                    <enumerationValue key="top">Top</enumerationValue>
+                    <enumerationValue key="bottom">Bottom</enumerationValue>
+                </enumerationValues>
+            </property>
+            <property key="dockAlign" type="enumeration" defaultValue="right">
+                <caption>Horizontal align</caption>
+                <description>When Dock position is Top or Bottom, anchors the panel to the Left or Right corner of that edge (for example Bottom + Right = bottom-right). Ignored when Dock position is Left or Right. Open beside tiles additional panels horizontally from this corner.</description>
                 <enumerationValues>
                     <enumerationValue key="right">Right</enumerationValue>
                     <enumerationValue key="left">Left</enumerationValue>
@@ -47,7 +55,7 @@
             </property>
             <property key="topOffset" type="string" required="false" defaultValue="0">
                 <caption>Top offset</caption>
-                <description>CSS top position of the maximized panel. Examples: 0, 64px, 10vh. Use this to clear a top navigation bar or app header so the panel does not cover chrome that must stay visible. Combined with Height to define the vertical band the panel occupies.</description>
+                <description>CSS top position of the maximized panel when Dock position is Left, Right, or Top. Examples: 0, 64px, 10vh. Use this to clear a top navigation bar or app header. Ignored when Dock position is Bottom.</description>
             </property>
             <property key="zIndex" type="integer" defaultValue="1000">
                 <caption>Z-index</caption>
@@ -59,7 +67,7 @@
             </property>
             <property key="multiOpenBehavior" type="enumeration" defaultValue="beside">
                 <caption>When multiple open</caption>
-                <description>How maximized panels are arranged when more than one Convey Modal Popup is open on the same dock side. Open beside (default) places each new panel next to earlier ones: the first sits at the dock edge, the next is offset by the previous panel width plus an 8px gap, and so on. Closing or minimizing a panel reflows the remaining ones. If combined widths exceed the viewport, inset is capped so about 40px of the panel stays visible. Overlap stacks every maximized panel at the dock edge (previous stacking behavior). Left and right dock sides are independent. Drag offsets still apply on top of the home inset.</description>
+                <description>How maximized panels are arranged when more than one Convey Modal Popup is open on the same dock edge. Open beside (default) places each new panel next to earlier ones: the first sits at the dock edge, the next is offset by the previous panel size plus an 8px gap (width for Left/Right, height for Top/Bottom), and so on. Closing or minimizing a panel reflows the remaining ones. If combined sizes exceed the viewport, inset is capped so about 40px of the panel stays visible. Overlap stacks every maximized panel at the dock edge. Each dock edge (left, right, top, bottom) is arranged independently. Drag offsets still apply on top of the home inset.</description>
                 <enumerationValues>
                     <enumerationValue key="beside">Open beside</enumerationValue>
                     <enumerationValue key="overlap">Overlap</enumerationValue>
@@ -121,7 +129,7 @@
             </property>
             <property key="panelBoxShadow" type="string" required="false" defaultValue="">
                 <caption>Panel box shadow</caption>
-                <description>Optional CSS box-shadow override for the maximized panel. Leave empty to keep the default side shadow (left or right depending on Dock position). Example: 0 8px 32px rgba(0,0,0,0.18). Use a stronger shadow when the panel is dragged over content and needs more elevation.</description>
+                <description>Optional CSS box-shadow override for the maximized panel. Leave empty to keep the default edge shadow (direction depends on Dock position: left, right, top, or bottom). Example: 0 8px 32px rgba(0,0,0,0.18). Use a stronger shadow when the panel is dragged over content and needs more elevation.</description>
             </property>
             <property key="tabColor" type="string" required="false" defaultValue="#cfe8ff">
                 <caption>Tab background</caption>

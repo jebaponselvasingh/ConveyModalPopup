@@ -67,6 +67,7 @@ export function ConveyModalPopup(props: ConveyModalPopupContainerProps): ReactEl
         content,
         isOpen,
         dockPosition,
+        dockAlign,
         width,
         height,
         topOffset,
@@ -393,6 +394,7 @@ export function ConveyModalPopup(props: ConveyModalPopupContainerProps): ReactEl
                     title={resolvedTitle}
                     iconClass={resolvedIconClass}
                     dockPosition={dockPosition}
+                    dockAlign={dockAlign}
                     multiOpenBehavior={multiOpenBehavior}
                     width={resolvedWidth}
                     height={resolvedHeight}
